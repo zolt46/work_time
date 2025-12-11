@@ -36,7 +36,7 @@ uvicorn backend.main:app --reload
 ## Render에 백엔드 배포
 1. GitHub 저장소를 Render Web Service로 연결합니다.
 2. Build 명령: `pip install -r backend/requirements.txt`
-3. Start 명령: `uvicorn backend.main:app --host 0.0.0.0 --port $PORT` (루트에서 실행하면 `backend` 패키지를 정상 인식해 `ModuleNotFoundError`를 방지합니다.)
+3. Start 명령: `./render_start.sh` (스크립트가 자동으로 저장소 루트로 이동하고 `PYTHONPATH`에 루트를 추가해 `ModuleNotFoundError: No module named 'backend'`를 방지합니다.)
 4. 환경 변수 설정: `DATABASE_URL`, `JWT_SECRET`, `ACCESS_TOKEN_EXPIRE_MINUTES`, `BACKEND_CORS_ORIGINS`.
 
 ## GitHub Pages로 프론트엔드 배포

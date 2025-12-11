@@ -28,6 +28,13 @@ class Settings:
         else:
             self.CORS_ALLOW_ORIGINS = [origin.strip() for origin in cors_origins.split(",") if origin.strip()]
 
+        allow_credentials_env = os.getenv("BACKEND_CORS_ALLOW_CREDENTIALS")
+        if allow_credentials_env is None:
+            # Using "*" together with credentials is not allowed by the CORS spec.
+            self.CORS_ALLOW_CREDENTIALS = self.CORS_ALLOW_ORIGINS != ["*"]
+        else:
+            self.CORS_ALLOW_CREDENTIALS = allow_credentials_env.lower() == "true"
+
         if not self.DATABASE_URL:
             raise RuntimeError("DATABASE_URL is not set. Configure it in your environment (e.g., Render secret).")
         if not self.JWT_SECRET:

@@ -23,7 +23,7 @@ class Settings:
         self.JWT_SECRET: str | None = os.getenv("JWT_SECRET")
 
         cors_origins = os.getenv("BACKEND_CORS_ORIGINS", "*")
-        if cors_origins == "*":
+        if not cors_origins or cors_origins == "*":
             self.CORS_ALLOW_ORIGINS = ["*"]
         else:
             self.CORS_ALLOW_ORIGINS = [origin.strip() for origin in cors_origins.split(",") if origin.strip()]

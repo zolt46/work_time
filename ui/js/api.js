@@ -6,13 +6,14 @@ function getToken() {
 }
 
 async function apiRequest(path, options = {}) {
-  const headers = options.headers || {};
-  if (getToken()) {
-    headers['Authorization'] = `Bearer ${getToken()}`;
+  const headers = options.headers ? { ...options.headers } : {};
+  const token = getToken();
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
   }
   const resp = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
   if (resp.status === 401) {
-    window.location.href = '/ui/html/index.html';
+    window.location.href = '../index.html';
     return;
   }
   if (!resp.ok) {

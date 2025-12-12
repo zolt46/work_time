@@ -8,16 +8,28 @@ function setStatusState(el, text, state) {
   if (state) el.classList.add(state);
 }
 
-export async function checkDbStatus(el) {
+export async function checkSystemStatus(el) {
   if (!el) return;
-  setStatusState(el, 'DB 연결 확인 중...', null);
+  setStatusState(el, '서버·DB 상태 확인 중...', null);
   try {
     const resp = await fetch(`${API_BASE_URL}/health`);
-    if (!resp.ok) throw new Error('health_failed');
-    const data = await resp.json();
-    const ok = data.db_status === 'ok' || data.db === 'ok';
-    setStatusState(el, ok ? 'DB 연결: 정상' : 'DB 연결: 확인 필요', ok ? 'status-ok' : 'status-bad');
+    let data = {};
+    try {
+      data = await resp.json();
+    } catch (e) {
+      // ignore json parse errors
+    }
+    const serverStatus = data.server_status ?? (resp.ok ? 'ok' : 'error');
+    const dbStatus = data.db_status ?? data.db ?? (resp.ok ? 'unknown' : 'error');
+    const serverOk = serverStatus === 'ok';
+    const dbOk = dbStatus === 'ok';
+    const allOk = resp.ok && serverOk && dbOk;
+    setStatusState(
+      el,
+      allOk ? '서버·DB 연결: 정상' : `서버 ${serverOk ? '정상' : '오류'} / DB ${dbOk ? '정상' : '오류'}`,
+      allOk ? 'status-ok' : 'status-bad'
+    );
   } catch (e) {
-    setStatusState(el, 'DB 연결: 실패', 'status-bad');
+    setStatusState(el, '서버·DB 연결: 실패', 'status-bad');
   }
 }

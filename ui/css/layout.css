@@ -19,6 +19,17 @@
   gap: 10px;
   font-weight: 700;
 }
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.auth-card { width: 100%; max-width: 420px; }
+.auth-logo { justify-content: center; margin-bottom: 8px; }
+.auth-actions { display: flex; justify-content: center; margin-top: 8px; }
+.system-status-row { display: flex; justify-content: center; margin-bottom: 12px; }
 .page {
   display: grid;
   grid-template-columns: 240px 1fr;

@@ -1,63 +1,81 @@
 <!-- File: /ui/html/dashboard.html -->
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>Dashboard - Dasan Shift Manager</title>
+  <title>대시보드 - 다산 근무 관리자</title>
   <link rel="stylesheet" href="../css/base.css" />
   <link rel="stylesheet" href="../css/layout.css" />
   <link rel="stylesheet" href="../css/components.css" />
 </head>
 <body>
   <header class="header">
-    <div class="logo"><img src="../assets/logo.png" width="32" /> Dashboard</div>
-    <div class="flex">Hello, <span id="user-name"></span> (<span id="user-role"></span>) <button class="btn muted" id="logout-btn">Logout</button></div>
+    <div class="header-left">
+      <button class="icon-btn" id="sidebar-toggle" aria-label="메뉴 열기">☰</button>
+      <div class="logo"><img src="../assets/logo.png" width="32" alt="logo" /> 대시보드</div>
+    </div>
+    <div class="header-right">
+      <span id="db-status" class="status-chip">DB 연결 확인 중...</span>
+      <span id="session-countdown" class="status-chip session-timer"></span>
+      <div class="muted">안녕하세요, <span id="user-name"></span> (<span id="user-role"></span>)</div>
+      <button class="btn muted" id="logout-btn">로그아웃</button>
+    </div>
   </header>
   <div class="page">
-    <nav class="sidebar">
-      <a href="dashboard.html">Dashboard</a>
-      <a href="schedule_overview.html">Schedule Overview</a>
-      <a href="member_profile.html">My Profile</a>
-      <a href="admin_members.html">Members</a>
-      <a href="admin_shifts.html">Shifts</a>
+    <nav class="sidebar" id="sidebar">
+      <div class="sidebar-title">탐색</div>
+      <a class="nav-link" data-page="dashboard" href="dashboard.html">대시보드</a>
+      <a class="nav-link" data-page="overview" href="schedule_overview.html">일정 개요</a>
+      <a class="nav-link" data-page="profile" href="member_profile.html">내 프로필</a>
+      <a class="nav-link" data-page="members" href="admin_members.html">구성원 관리</a>
+      <a class="nav-link" data-page="shifts" href="admin_shifts.html">근무 관리</a>
     </nav>
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
     <main class="content">
       <div class="grid two">
         <div class="card">
-          <div class="card-title">Today</div>
-          <div id="today-info" class="muted">Loading...</div>
+          <div class="card-title">오늘 일정</div>
+          <div id="today-info" class="muted">불러오는 중...</div>
         </div>
         <div class="card">
-          <div class="card-title">Pending Requests</div>
-          <div id="pending-count" class="muted">Loading...</div>
+          <div class="card-title">대기 중인 요청</div>
+          <div id="pending-count" class="muted">불러오는 중...</div>
         </div>
       </div>
       <div class="card">
-        <div class="card-title">Quick Links</div>
-        <div class="flex">
-          <a class="btn" href="schedule_overview.html">Global Schedule</a>
-          <a class="btn secondary" href="member_profile.html">My Profile</a>
-          <a class="btn muted" href="admin_members.html">Admin</a>
-        </div>
+        <div class="card-title">주간 일정 한눈에 보기</div>
+        <div id="schedule-summary" class="loader">일정을 불러오는 중...</div>
       </div>
     </main>
   </div>
   <script type="module">
-    import { loadUser, logout } from '../js/auth.js';
     import { apiRequest } from '../js/api.js';
-    document.getElementById('logout-btn').onclick = logout;
-    const user = await loadUser();
-    if (user) {
-      try {
-        const mine = await apiRequest('/schedule/me');
-        document.getElementById('today-info').textContent = `${mine.length} assignments`;        
-      } catch { document.getElementById('today-info').textContent = 'No data'; }
+    import { initAppLayout } from '../js/layout.js';
+    import { loadGlobalSchedule, renderCompactSchedule } from '../js/schedule.js';
 
-      try {
-        const pending = await apiRequest('/requests/pending');
-        document.getElementById('pending-count').textContent = `${pending.length} awaiting approval`;
-      } catch { document.getElementById('pending-count').textContent = 'N/A'; }
+    await initAppLayout('dashboard');
+
+    try {
+      const mine = await apiRequest('/schedule/me');
+      document.getElementById('today-info').textContent = `${mine.length}개의 배정`;
+    } catch {
+      document.getElementById('today-info').textContent = '데이터 없음';
     }
+
+    try {
+      const pending = await apiRequest('/requests/pending');
+      document.getElementById('pending-count').textContent = `${pending.length}건 승인 대기`;
+    } catch {
+      document.getElementById('pending-count').textContent = '확인 불가';
+    }
+
+    let assignments = [];
+    try {
+      assignments = await loadGlobalSchedule();
+    } catch (e) {
+      document.getElementById('schedule-summary').textContent = '일정을 가져올 수 없습니다';
+    }
+    renderCompactSchedule(assignments, 'schedule-summary', 8);
   </script>
 </body>
 </html>

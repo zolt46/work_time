@@ -1,16 +1,16 @@
 // File: /ui/js/schedule.js
 import { apiRequest } from './api.js';
 
-function renderGlobalSchedule(assignments) {
-  const container = document.getElementById('schedule-container');
+function renderGlobalSchedule(assignments, targetId = 'schedule-container') {
+  const container = document.getElementById(targetId);
   if (!container) return;
   container.innerHTML = '';
   const grid = document.createElement('div');
   grid.className = 'schedule-grid';
-  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const days = ['월','화','수','목','금','토','일'];
   grid.appendChild(cell('','header'));
   days.forEach(d=>grid.appendChild(cell(d,'header')));
-  const timeSlots = ['Morning','Afternoon','Evening'];
+  const timeSlots = ['오전','오후','야간'];
   timeSlots.forEach(slot=>{
     grid.appendChild(cell(slot,'header'));
     for (let i=0;i<7;i++) {
@@ -35,9 +35,29 @@ function cell(text, cls) {
   return div;
 }
 
-async function loadGlobalSchedule() {
+async function loadGlobalSchedule(targetId = 'schedule-container') {
   const data = await apiRequest('/schedule/global');
-  renderGlobalSchedule(data.assignments);
+  renderGlobalSchedule(data.assignments, targetId);
+  return data.assignments;
+}
+
+function renderCompactSchedule(assignments, targetId = 'schedule-summary', limit = 5) {
+  const container = document.getElementById(targetId);
+  if (!container) return;
+  container.innerHTML = '';
+  if (!assignments || assignments.length === 0) {
+    container.textContent = '배정된 일정이 없습니다.';
+    return;
+  }
+  const list = document.createElement('ul');
+  list.className = 'compact-list';
+  assignments.slice(0, limit).forEach((item) => {
+    const li = document.createElement('li');
+    const day = ['월','화','수','목','금','토','일'][item.shift.weekday] || '-';
+    li.textContent = `${day} ${item.shift.name} (${item.shift.start_time.slice(0,5)}-${item.shift.end_time.slice(0,5)}) · ${item.user.name}`;
+    list.appendChild(li);
+  });
+  container.appendChild(list);
 }
 
 async function loadMySchedule() {
@@ -47,9 +67,9 @@ async function loadMySchedule() {
   listEl.innerHTML = '';
   data.forEach(item => {
     const li = document.createElement('li');
-    li.textContent = `${item.shift_id} | from ${item.valid_from} ${item.valid_to ? 'to '+item.valid_to : ''}`;
+    li.textContent = `${item.shift_id} | ${item.valid_from}${item.valid_to ? ' ~ '+item.valid_to : ''}`;
     listEl.appendChild(li);
   });
 }
 
-export { loadGlobalSchedule, loadMySchedule };
+export { loadGlobalSchedule, loadMySchedule, renderCompactSchedule };

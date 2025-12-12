@@ -41,7 +41,7 @@ async function login(event) {
     localStorage.setItem('token', data.access_token);
     const exp = parseTokenExp(data.access_token);
     if (exp) localStorage.setItem('token_exp', String(exp));
-    window.location.href = 'dashboard.html';
+    window.location.href = 'html/dashboard.html';
   } catch (err) {
     alert(err.message);
     if (statusText) statusText.textContent = '로그인에 실패했습니다. 다시 시도해주세요.';
@@ -65,7 +65,12 @@ async function loadUser() {
 
 function logout() {
   clearToken();
-  window.location.href = 'index.html';
+  const path = window.location.pathname;
+  const base = path.includes('/html/')
+    ? path.split('/html/')[0]
+    : path.replace(/\/[^/]*$/, '/');
+  const target = `${window.location.origin}${base.endsWith('/') ? base : base + '/'}index.html`;
+  window.location.replace(target);
 }
 
 function startSessionCountdown(el) {

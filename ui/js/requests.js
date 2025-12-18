@@ -115,6 +115,19 @@ async function submitRequest(event) {
   }
 }
 
+async function populateShiftSelect(selectId) {
+  const select = document.getElementById(selectId);
+  if (!select) return;
+  const shifts = await ensureShifts();
+  select.innerHTML = '';
+  shifts.forEach((s) => {
+    const opt = document.createElement('option');
+    opt.value = s.id;
+    opt.textContent = `${s.name} (${s.start_time}~${s.end_time})`;
+    select.appendChild(opt);
+  });
+}
+
 async function loadMyRequests() {
   const list = document.getElementById('my-requests');
   if (!list) return;

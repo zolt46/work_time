@@ -168,6 +168,7 @@ async function assignShift(event) {
   };
   await apiRequest('/schedule/slots/assign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
   alert('배정되었습니다');
+  watchAssignmentPreview();
 }
 
 export { loadMembers, createMember, createShift, assignShift, loadUserOptions, loadShiftTable, buildAssignSlotGrid };

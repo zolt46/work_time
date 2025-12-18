@@ -30,6 +30,7 @@
         <div class="status-meta" id="status-meta">상태 체크 중...</div>
       </div>
       <span id="session-countdown" class="status-chip session-timer"></span>
+      <button class="btn tiny secondary" id="extend-session" style="display:none;">세션 연장</button>
       <div class="muted">안녕하세요, <span id="user-name"></span> (<span id="user-role"></span>)</div>
       <button class="btn muted" id="logout-btn">로그아웃</button>
     </div>
@@ -40,15 +41,17 @@
       <a class="nav-link" data-page="dashboard" href="dashboard.html">대시보드</a>
       <a class="nav-link" data-page="overview" href="schedule_overview.html">근무 시간표</a>
       <a class="nav-link" data-page="profile" href="member_profile.html">내 프로필</a>
-      <a class="nav-link" data-page="members" href="admin_members.html">구성원 관리</a>
-      <a class="nav-link" data-page="shifts" href="admin_shifts.html">근무 관리</a>
+      <a class="nav-link" data-page="requests" href="request_center.html">근무 변경 신청</a>
+      <a class="nav-link" data-page="approvals" data-roles="MASTER,OPERATOR" href="request_approvals.html">변경 승인함</a>
+      <a class="nav-link" data-page="members" data-min-role="OPERATOR" href="admin_members.html">구성원 관리</a>
+      <a class="nav-link" data-page="shifts" data-min-role="OPERATOR" href="admin_shifts.html">근무 관리</a>
     </nav>
     <div class="sidebar-overlay" id="sidebar-overlay"></div>
     <main class="content">
       <div class="grid two">
         <div class="card">
           <div class="card-title">근무 종류 생성</div>
-          <form id="shift-form">
+          <form id="shift-form" class="stack">
             <input id="shift-name" placeholder="근무 이름" required />
             <select id="shift-weekday">
               <option value="0">월요일</option>
@@ -66,24 +69,50 @@
           </form>
         </div>
         <div class="card">
-          <div class="card-title">근무 배정</div>
-          <form id="assign-form">
-            <input id="assign-user" placeholder="사용자 ID" required />
-            <input id="assign-shift" placeholder="근무 ID" required />
-            <input id="assign-from" type="date" required />
-            <input id="assign-to" type="date" placeholder="종료일(선택)" />
-            <button class="btn secondary" type="submit">배정하기</button>
-          </form>
+          <div class="card-title">근무 목록</div>
+          <table class="table" id="shift-table">
+            <thead><tr><th>이름</th><th>요일</th><th>시간</th><th>위치</th></tr></thead>
+            <tbody id="shift-table-body"></tbody>
+          </table>
         </div>
+      </div>
+      <div class="card">
+        <div class="card-title">근무 배정 & 시간표</div>
+        <p class="muted">1시간 단위 슬롯을 선택해 요일·시간을 배정하세요. 근무 항목 선택 없이 바로 할당됩니다.</p>
+        <form id="assign-form" class="grid two">
+          <div class="stack">
+            <label>대상 구성원</label>
+            <select id="assign-user" required></select>
+          </div>
+          <div class="stack">
+            <label>적용 시작일</label>
+            <input id="assign-from" type="date" required />
+          </div>
+          <div class="stack">
+            <label>종료일(선택)</label>
+            <input id="assign-to" type="date" placeholder="종료일(선택)" />
+          </div>
+          <div class="stack full">
+            <label>시간표 슬롯 선택</label>
+            <div id="assign-slot-grid" class="slot-grid"></div>
+            <div id="assign-slot-preview" class="muted">요일과 시간을 클릭해 배정할 슬롯을 선택하세요.</div>
+          </div>
+          <div class="stack full">
+            <button class="btn secondary" type="submit">배정하기</button>
+          </div>
+        </form>
       </div>
     </main>
   </div>
   <script type="module">
     import { initAppLayout } from '../js/layout.js';
-    import { createShift, assignShift } from '../js/admin.js';
+    import { createShift, assignShift, loadUserOptions, loadShiftTable, buildAssignSlotGrid } from '../js/admin.js';
 
     await initAppLayout('shifts');
     document.getElementById('shift-form').addEventListener('submit', createShift);
+    await loadUserOptions('assign-user');
+    await loadShiftTable();
+    buildAssignSlotGrid();
     document.getElementById('assign-form').addEventListener('submit', assignShift);
   </script>
 </body>

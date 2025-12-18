@@ -1,6 +1,7 @@
 // File: /ui/js/layout.js
-import { loadUser, logout, startSessionCountdown } from './auth.js';
+import { loadUser, logout, startSessionCountdown, refreshSession } from './auth.js';
 import { checkSystemStatus } from './status.js';
+import { API_BASE_URL } from './api.js';
 
 function setupSidebar() {
   const sidebar = document.getElementById('sidebar');
@@ -33,6 +34,26 @@ function highlightNav(activePage) {
   });
 }
 
+const roleOrder = { MEMBER: 1, OPERATOR: 2, MASTER: 3 };
+
+function applyNavVisibility(role) {
+  document.querySelectorAll('.nav-link').forEach((link) => {
+    const allowedRoles = (link.dataset.roles || '')
+      .split(',')
+      .map((r) => r.trim())
+      .filter(Boolean);
+    const minRole = link.dataset.minRole;
+    let visible = true;
+    if (allowedRoles.length) {
+      visible = allowedRoles.includes(role);
+    }
+    if (visible && minRole) {
+      visible = roleOrder[role] >= roleOrder[minRole];
+    }
+    link.style.display = visible ? '' : 'none';
+  });
+}
+
 function wireCommonActions() {
   const logoutBtn = document.getElementById('logout-btn');
   if (logoutBtn) logoutBtn.onclick = () => logout(true);
@@ -50,12 +71,40 @@ export async function initAppLayout(activePage) {
   setupSidebar();
   wireCommonActions();
   const user = await loadUser();
-  startSessionCountdown(document.getElementById('session-countdown'));
+  if (user) applyNavVisibility(user.role);
+  startSessionCountdown(
+    document.getElementById('session-countdown'),
+    document.getElementById('extend-session')
+  );
+  const extendBtn = document.getElementById('extend-session');
+  if (extendBtn) {
+    extendBtn.addEventListener('click', async () => {
+      extendBtn.disabled = true;
+      extendBtn.textContent = '연장 중...';
+      try {
+        await refreshSession();
+        startSessionCountdown(
+          document.getElementById('session-countdown'),
+          extendBtn
+        );
+        extendBtn.textContent = '세션 연장됨';
+      } catch (e) {
+        extendBtn.textContent = '연장 실패';
+      } finally {
+        setTimeout(() => { extendBtn.textContent = '세션 연장'; extendBtn.disabled = false; }, 1500);
+      }
+    });
+  }
   await checkSystemStatus(
     document.getElementById('server-status'),
     document.getElementById('db-status'),
     document.getElementById('status-meta')
   );
+
+  // keep-alive ping to 줄여서 서버 지연 방지
+  setInterval(() => {
+    fetch(`${API_BASE_URL}/health`, { cache: 'no-store' }).catch(() => {});
+  }, 120000);
   return user;
 }
 

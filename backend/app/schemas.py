@@ -1,5 +1,6 @@
 # File: /backend/app/schemas.py
 from datetime import datetime, date, time
+import enum
 from typing import Optional, List
 from uuid import UUID  # ✅ UUID 타입 추가
 
@@ -28,7 +29,7 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     login_id: str
-    password: str = Field(min_length=8)
+    password: str = Field(min_length=1)
 
 
 class UserUpdate(BaseModel):
@@ -44,11 +45,23 @@ class UserOut(UserBase):
 
     # 🔧 DB에서 UUID 컬럼이므로 UUID 타입으로 맞춰줌
     id: UUID
+    auth_account: "AuthAccountOut | None" = None
 
 
 class PasswordChange(BaseModel):
     old_password: str
     new_password: str = Field(min_length=8)
+
+
+class AccountUpdate(BaseModel):
+    current_password: str
+    new_login_id: str | None = None
+    new_password: str | None = Field(default=None, min_length=8)
+
+
+class CredentialAdminUpdate(BaseModel):
+    new_login_id: str | None = None
+    new_password: str | None = Field(default=None, min_length=1)
 
 
 class ShiftBase(BaseModel):
@@ -90,8 +103,10 @@ class AssignmentOut(BaseModel):
 class RequestCreate(BaseModel):
     type: RequestType
     target_date: date
-    target_shift_id: UUID  # 🔧 UUID
-    reason: Optional[str] = None
+    target_shift_id: UUID | None = None  # 🔧 UUID (단일 선택)
+    target_shift_ids: list[UUID] | None = None  # 다중 슬롯 지원
+    reason: str = Field(min_length=1)
+    user_id: UUID | None = None
 
 
 class RequestAction(BaseModel):
@@ -113,6 +128,18 @@ class RequestOut(BaseModel):
     created_at: datetime
 
 
+class RequestLogOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    actor_user_id: Optional[UUID]
+    action_type: str
+    target_user_id: Optional[UUID]
+    request_id: Optional[UUID]
+    details: Optional[dict]
+    created_at: datetime
+
+
 class AuditLogOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -123,3 +150,70 @@ class AuditLogOut(BaseModel):
     request_id: Optional[UUID]
     details: Optional[dict]
     created_at: datetime
+
+
+class HistoryEntry(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    action_type: str
+    action_label: str
+    actor_user_id: Optional[UUID]
+    actor_name: Optional[str]
+    target_user_id: Optional[UUID]
+    target_name: Optional[str]
+    request_id: Optional[UUID]
+    details: Optional[dict]
+    created_at: datetime
+
+
+class AuthAccountOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    login_id: str
+    last_login_at: datetime | None = None
+
+
+class ResetScope(str, enum.Enum):
+    MEMBERS = "members"
+    OPERATORS_AND_MEMBERS = "operators_members"
+    ALL = "all"
+
+
+class ResetRequest(BaseModel):
+    scope: ResetScope
+
+
+class ShiftSlot(BaseModel):
+    weekday: int
+    start_time: time
+    end_time: time
+    name: str | None = None
+    location: str | None = None
+
+
+class SlotAssign(BaseModel):
+    user_id: UUID
+    weekday: int
+    start_hour: int
+    end_hour: int | None = None
+    valid_from: date
+    valid_to: Optional[date] = None
+    location: str | None = None
+
+
+class ScheduleEvent(BaseModel):
+    user_id: UUID
+    user_name: str
+    role: UserRole
+    date: date
+    start_time: time
+    end_time: time
+    shift_id: UUID
+    shift_name: str
+    location: str | None = None
+    source: str = "BASE"  # BASE, EXTRA, ABSENCE
+
+
+# Forward references
+UserOut.model_rebuild()

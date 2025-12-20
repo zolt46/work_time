@@ -1,27 +1,49 @@
 // File: /ui/js/admin.js
 import { apiRequest } from './api.js';
 
-var roleLabel = {
+const roleLabel = {
   MASTER: '마스터',
   OPERATOR: '운영자',
   MEMBER: '구성원'
 };
 
-var members = [];
-var selectedMember = null;
-var editorOptions = { allowCredentialEdit: false };
-var assignGridCells = new Map();
-var assignedSlots = new Set();
-var selectedAssignSlots = new Set();
-var days = ['월', '화', '수', '목', '금', '토', '일'];
-var hours = Array.from({ length: 9 }, (_, i) => 9 + i); // 09~18시
+let members = [];
+let selectedMember = null;
+const editorOptions = { allowCredentialEdit: false };
+const assignGridCells = new Map();
+const assignedSlots = new Set();
+const selectedAssignSlots = new Set();
+const days = ['월', '화', '수', '목', '금', '토', '일'];
+const hours = Array.from({ length: 9 }, (_, i) => 9 + i); // 09~18시
+
+function parseDateValue(dateStr) {
+  if (!dateStr) return new Date();
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(y, (m || 1) - 1, d || 1);
+}
+
+function formatDateOnly(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
 
 function weekStart(dateStr) {
-  const d = dateStr ? new Date(dateStr) : new Date();
+  const d = parseDateValue(dateStr);
   const diff = (d.getDay() + 6) % 7;
   const start = new Date(d);
   start.setDate(d.getDate() - diff);
-  return start.toISOString().slice(0, 10);
+  return formatDateOnly(start);
+}
+
+function formatDateTime(dateStr) {
+  if (!dateStr) return '-';
+  try {
+    return new Date(dateStr).toLocaleString();
+  } catch {
+    return dateStr;
+  }
 }
 
 // ---------------------- 공통 유틸 ----------------------
@@ -30,6 +52,17 @@ function setButtonLoading(btn, isLoading, text) {
   btn.disabled = isLoading;
   btn.classList.toggle('loading', isLoading);
   if (text) btn.textContent = text;
+}
+
+function updateSaveButtonState() {
+  const saveBtn = document.getElementById('edit-save');
+  if (!saveBtn) return;
+  const name = document.getElementById('edit-name')?.value.trim();
+  const login = document.getElementById('edit-login')?.value.trim();
+  const password = document.getElementById('edit-password')?.value.trim();
+  const isEditing = Boolean(selectedMember);
+  const passwordReady = isEditing ? true : Boolean(password);
+  saveBtn.disabled = !(name && login && passwordReady);
 }
 
 function setEditForm(member) {
@@ -45,14 +78,17 @@ function setEditForm(member) {
   const activeSelect = document.getElementById('edit-active');
   const loginInput = document.getElementById('edit-login');
   const pwInput = document.getElementById('edit-password');
+  const saveBtn = document.getElementById('edit-save');
   if (idInput) idInput.value = member.id;
   if (nameInput) nameInput.value = member.name || '';
   if (identInput) identInput.value = member.identifier || '';
   if (roleSelect) roleSelect.value = member.role;
   if (activeSelect) activeSelect.value = member.active ? 'true' : 'false';
   if (loginInput) loginInput.value = member.auth_account?.login_id || '';
-  if (pwInput) pwInput.value = '';
-  if (pwInput) pwInput.disabled = !editorOptions.allowCredentialEdit;
+  if (pwInput) {
+    pwInput.value = '';
+    pwInput.disabled = !editorOptions.allowCredentialEdit;
+  }
   if (saveBtn) saveBtn.disabled = false;
   const detail = document.getElementById('member-detail');
   const modeLabel = document.getElementById('member-form-mode');
@@ -66,6 +102,7 @@ function setEditForm(member) {
       비밀번호는 해시로 저장되어 조회할 수 없습니다. 필요 시 새 임시 비밀번호로 재설정해 전달하세요.
     `;
   }
+  updateSaveButtonState();
 }
 
 function clearEditForm() {
@@ -82,8 +119,11 @@ function clearEditForm() {
   if (roleSelect) roleSelect.value = 'MEMBER';
   if (activeSelect) activeSelect.value = 'true';
   if (loginInput) loginInput.value = '';
-  if (pwInput) pwInput.value = '';
-  if (saveBtn) saveBtn.disabled = true;
+  if (pwInput) {
+    pwInput.value = '';
+    pwInput.disabled = !editorOptions.allowCredentialEdit;
+  }
+  updateSaveButtonState();
   const detail = document.getElementById('member-detail');
   const modeLabel = document.getElementById('member-form-mode');
   if (modeLabel) modeLabel.textContent = '신규 구성원을 추가하거나 목록에서 선택해 수정하세요.';
@@ -117,7 +157,7 @@ function renderMembers() {
   const filtered = applyMemberFilters(members);
   filtered.forEach((m) => {
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${m.name}</td><td>${roleLabel[m.role] || m.role}</td><td>${m.identifier || '-'}</td><td>${m.auth_account?.login_id || '-'}</td><td>${m.active ? '활성' : '비활성'}</td><td>${formatDate(m.auth_account?.last_login_at)}</td>`;
+    tr.innerHTML = `<td>${m.name}</td><td>${roleLabel[m.role] || m.role}</td><td>${m.identifier || '-'}</td><td>${m.auth_account?.login_id || '-'}</td><td>${m.active ? '활성' : '비활성'}</td><td>${formatDateTime(m.auth_account?.last_login_at)}</td>`;
     if (selectedMember?.id === m.id) tr.classList.add('selected');
     tr.addEventListener('click', () => setEditForm(m));
     tbody.appendChild(tr);
@@ -146,9 +186,10 @@ async function saveMember(event) {
   event.preventDefault();
   const submitBtn = document.getElementById('edit-save');
   setButtonLoading(submitBtn, true, '저장 중...');
+  const identifierInput = document.getElementById('edit-identifier');
   const payload = {
     name: document.getElementById('edit-name').value,
-    identifier: document.getElementById('edit-identifier').value,
+    identifier: identifierInput?.value,
     role: document.getElementById('edit-role').value,
     active: document.getElementById('edit-active').value === 'true'
   };
@@ -156,6 +197,11 @@ async function saveMember(event) {
   const new_password = document.getElementById('edit-password')?.value;
 
   try {
+    if (!payload.identifier) {
+      const generated = `AUTO-${Math.random().toString(36).slice(2, 7).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`;
+      payload.identifier = generated;
+      if (identifierInput) identifierInput.value = generated;
+    }
     let saved;
     if (!selectedMember) {
       if (!new_password) throw new Error('신규 구성원 비밀번호를 입력하세요.');
@@ -190,52 +236,20 @@ async function saveMember(event) {
     alert(e.message || '처리에 실패했습니다.');
   } finally {
     setButtonLoading(submitBtn, false, '저장');
+    updateSaveButtonState();
   }
 }
 
 function bindMemberEvents() {
   document.getElementById('member-combined-form')?.addEventListener('submit', saveMember);
-  document.getElementById('member-new')?.addEventListener('click', clearEditForm);
+  document.getElementById('edit-cancel')?.addEventListener('click', clearEditForm);
   document.getElementById('member-refresh')?.addEventListener('click', loadMembers);
+  ['edit-name', 'edit-identifier', 'edit-role', 'edit-active', 'edit-login', 'edit-password'].forEach((id) => {
+    document.getElementById(id)?.addEventListener('input', updateSaveButtonState);
+  });
   ['member-search', 'member-filter-role', 'member-filter-active'].forEach((id) => {
     document.getElementById(id)?.addEventListener('input', renderMembers);
   });
-  return ranges;
-}
-
-async function initMemberPage(user) {
-  editorOptions.allowCredentialEdit = user?.role === 'MASTER';
-  bindMemberEvents();
-  clearEditForm();
-  await loadMembers();
-}
-
-async function initMemberPage(user) {
-  editorOptions.allowCredentialEdit = user?.role === 'MASTER';
-  bindMemberEvents();
-  clearEditForm();
-  await loadMembers();
-}
-
-async function initMemberPage(user) {
-  editorOptions.allowCredentialEdit = user?.role === 'MASTER';
-  bindMemberEvents();
-  clearEditForm();
-  await loadMembers();
-}
-
-async function initMemberPage(user) {
-  editorOptions.allowCredentialEdit = user?.role === 'MASTER';
-  bindMemberEvents();
-  clearEditForm();
-  await loadMembers();
-}
-
-async function initMemberPage(user) {
-  editorOptions.allowCredentialEdit = user?.role === 'MASTER';
-  bindMemberEvents();
-  clearEditForm();
-  await loadMembers();
 }
 
 async function initMemberManagement(user) {
@@ -248,7 +262,7 @@ async function initMemberManagement(user) {
 async function loadUserOptions(selectId) {
   const select = document.getElementById(selectId);
   if (!select) return;
-  const users = await apiRequest('/users');
+  const users = members.length ? members : await apiRequest('/users');
   select.innerHTML = '<option value="">대상 선택</option>';
   users
     .filter((u) => u.role === 'MEMBER')
@@ -260,11 +274,19 @@ async function loadUserOptions(selectId) {
     });
 }
 
+function clearAssignSelection() {
+  selectedAssignSlots.clear();
+  assignGridCells.forEach((cell) => cell.classList.remove('selected'));
+  updateAssignPreview();
+}
+
 function buildAssignSlotGrid() {
   const grid = document.getElementById('assign-slot-grid');
   if (!grid) return;
   grid.innerHTML = '';
   assignGridCells.clear();
+  assignedSlots.clear();
+  selectedAssignSlots.clear();
 
   const headerBlank = document.createElement('div');
   headerBlank.className = 'slot-header';
@@ -304,21 +326,6 @@ function buildAssignSlotGrid() {
   updateAssignPreview();
 }
 
-async function loadUserOptions(selectId) {
-  const select = document.getElementById(selectId);
-  if (!select) return;
-  const users = members.length ? members : await apiRequest('/users');
-  select.innerHTML = '<option value="">대상 선택</option>';
-  users
-    .filter((u) => u.role === 'MEMBER')
-    .forEach((u) => {
-      const opt = document.createElement('option');
-      opt.value = u.id;
-      opt.textContent = `${u.name} (${u.identifier || '개인 ID 없음'})`;
-      select.appendChild(opt);
-    });
-}
-
 function updateAssignPreview() {
   const preview = document.getElementById('assign-slot-preview');
   if (!preview) return;
@@ -334,15 +341,16 @@ function updateAssignPreview() {
 async function refreshAssignedSlotsForUser() {
   assignedSlots.clear();
   assignGridCells.forEach((cell) => cell.classList.remove('assigned'));
-  const user_id = document.getElementById('assign-user')?.value;
   clearAssignSelection();
+  const user_id = document.getElementById('assign-user')?.value;
   if (!user_id) return;
-  const from = document.getElementById('assign-from')?.value || new Date().toISOString().slice(0, 10);
-  const params = new URLSearchParams({ start: weekStart(from), user_id });
+  const fromInput = document.getElementById('assign-from')?.value || formatDateOnly(new Date());
+  const params = new URLSearchParams({ start: weekStart(fromInput), user_id });
   try {
     const events = await apiRequest(`/schedule/weekly_view?${params.toString()}`);
     events.forEach((ev) => {
-      const weekday = (new Date(ev.date).getDay() + 6) % 7;
+      const dateObj = parseDateValue(ev.date);
+      const weekday = (dateObj.getDay() + 6) % 7;
       const startHour = parseInt(ev.start_time.split(':')[0], 10);
       const endHour = parseInt(ev.end_time.split(':')[0], 10);
       for (let h = Math.max(9, startHour); h < Math.min(18, endHour); h++) {
@@ -359,23 +367,15 @@ async function refreshAssignedSlotsForUser() {
   }
 }
 
-function weekStart(dateStr) {
-  const d = dateStr ? new Date(dateStr) : new Date();
-  const diff = (d.getDay() + 6) % 7;
-  const start = new Date(d);
-  start.setDate(d.getDate() - diff);
-  return start.toISOString().slice(0, 10);
-}
-
 async function assignShift(event) {
   event.preventDefault();
   if (!selectedAssignSlots.size) {
     alert('요일·시간 슬롯을 최소 1개 이상 선택하세요.');
     return;
   }
-  const user_id = document.getElementById('assign-user').value;
-  const valid_from = document.getElementById('assign-from').value;
-  const valid_to = document.getElementById('assign-to').value || valid_from;
+  const user_id = document.getElementById('assign-user')?.value;
+  const valid_from = document.getElementById('assign-from')?.value;
+  const valid_to = document.getElementById('assign-to')?.value || valid_from;
   if (!valid_from) {
     alert('적용 시작일을 입력하세요.');
     return;

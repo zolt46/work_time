@@ -46,6 +46,15 @@ function formatDate(dateStr) {
   }
 }
 
+function formatDate(dateStr) {
+  if (!dateStr) return '-';
+  try {
+    return new Date(dateStr).toLocaleString();
+  } catch {
+    return dateStr;
+  }
+}
+
 // ---------------------- 공통 유틸 ----------------------
 function setButtonLoading(btn, isLoading, text) {
   if (!btn) return;

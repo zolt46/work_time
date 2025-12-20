@@ -1,7 +1,7 @@
 import { apiRequest } from './api.js';
 
 const days = ['월', '화', '수', '목', '금', '토', '일'];
-const hours = Array.from({ length: 15 }, (_, i) => 8 + i); // 08~22시
+const hours = Array.from({ length: 9 }, (_, i) => 9 + i); // 09~18시
 
 let shiftCache = null;
 let slotCells = new Map();
@@ -183,7 +183,7 @@ async function refreshAssignedSlots() {
       const dayIndex = (new Date(ev.date).getDay() + 6) % 7;
       const startHour = parseInt(ev.start_time.split(':')[0], 10);
       const endHour = parseInt(ev.end_time.split(':')[0], 10);
-      for (let h = startHour; h < endHour; h++) {
+      for (let h = Math.max(9, startHour); h < Math.min(18, endHour); h++) {
         const key = `${dayIndex}-${h}`;
         assignedSlots.add(key);
         slotShiftMap.set(key, ev.shift_id);

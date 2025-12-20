@@ -24,6 +24,7 @@ function weekStart(dateStr) {
   return start.toISOString().slice(0, 10);
 }
 
+// ---------------------- 공통 유틸 ----------------------
 function setButtonLoading(btn, isLoading, text) {
   if (!btn) return;
   btn.disabled = isLoading;
@@ -42,7 +43,6 @@ function setEditForm(member) {
   const identInput = document.getElementById('edit-identifier');
   const roleSelect = document.getElementById('edit-role');
   const activeSelect = document.getElementById('edit-active');
-  const saveBtn = document.getElementById('edit-save');
   const loginInput = document.getElementById('edit-login');
   const pwInput = document.getElementById('edit-password');
   if (idInput) idInput.value = member.id;
@@ -175,7 +175,10 @@ async function saveMember(event) {
         saved = await apiRequest(`/users/${selectedMember.id}/credentials`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ new_login_id: login_id || null, new_password: new_password || null })
+          body: JSON.stringify({
+            new_login_id: login_id || null,
+            new_password: new_password || null
+          })
         });
       }
       alert('구성원 정보가 업데이트되었습니다.');
@@ -197,6 +200,35 @@ function bindMemberEvents() {
   ['member-search', 'member-filter-role', 'member-filter-active'].forEach((id) => {
     document.getElementById(id)?.addEventListener('input', renderMembers);
   });
+  return ranges;
+}
+
+async function initMemberPage(user) {
+  editorOptions.allowCredentialEdit = user?.role === 'MASTER';
+  bindMemberEvents();
+  clearEditForm();
+  await loadMembers();
+}
+
+async function initMemberPage(user) {
+  editorOptions.allowCredentialEdit = user?.role === 'MASTER';
+  bindMemberEvents();
+  clearEditForm();
+  await loadMembers();
+}
+
+async function initMemberPage(user) {
+  editorOptions.allowCredentialEdit = user?.role === 'MASTER';
+  bindMemberEvents();
+  clearEditForm();
+  await loadMembers();
+}
+
+async function initMemberPage(user) {
+  editorOptions.allowCredentialEdit = user?.role === 'MASTER';
+  bindMemberEvents();
+  clearEditForm();
+  await loadMembers();
 }
 
 async function initMemberPage(user) {
@@ -223,10 +255,10 @@ async function loadUserOptions(selectId) {
 
 function buildAssignSlotGrid() {
   const grid = document.getElementById('assign-slot-grid');
-  const preview = document.getElementById('assign-slot-preview');
   if (!grid) return;
   grid.innerHTML = '';
   assignGridCells.clear();
+
   const headerBlank = document.createElement('div');
   headerBlank.className = 'slot-header';
   grid.appendChild(headerBlank);
@@ -238,7 +270,7 @@ function buildAssignSlotGrid() {
   });
   hours.forEach((hour) => {
     const label = document.createElement('div');
-    label.className = 'slot-header';
+    label.className = 'slot-header slot-header-time';
     label.textContent = `${hour}:00`;
     grid.appendChild(label);
     days.forEach((_, weekday) => {
@@ -265,11 +297,19 @@ function buildAssignSlotGrid() {
   updateAssignPreview();
 }
 
-function clearAssignSelection() {
-  selectedAssignSlots.clear();
-  assignGridCells.forEach((cell) => cell.classList.remove('selected'));
-  const preview = document.getElementById('assign-slot-preview');
-  if (preview) preview.textContent = '요일·시간 칸을 터치하여 배정할 슬롯을 선택하세요.';
+async function loadUserOptions(selectId) {
+  const select = document.getElementById(selectId);
+  if (!select) return;
+  const users = members.length ? members : await apiRequest('/users');
+  select.innerHTML = '<option value="">대상 선택</option>';
+  users
+    .filter((u) => u.role === 'MEMBER')
+    .forEach((u) => {
+      const opt = document.createElement('option');
+      opt.value = u.id;
+      opt.textContent = `${u.name} (${u.identifier || '개인 ID 없음'})`;
+      select.appendChild(opt);
+    });
 }
 
 function updateAssignPreview() {
@@ -312,10 +352,18 @@ async function refreshAssignedSlotsForUser() {
   }
 }
 
+function weekStart(dateStr) {
+  const d = dateStr ? new Date(dateStr) : new Date();
+  const diff = (d.getDay() + 6) % 7;
+  const start = new Date(d);
+  start.setDate(d.getDate() - diff);
+  return start.toISOString().slice(0, 10);
+}
+
 async function assignShift(event) {
   event.preventDefault();
   if (!selectedAssignSlots.size) {
-    alert('요일·시간 슬롯을 선택하세요.');
+    alert('요일·시간 슬롯을 최소 1개 이상 선택하세요.');
     return;
   }
   const user_id = document.getElementById('assign-user').value;

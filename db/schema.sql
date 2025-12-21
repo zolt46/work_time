@@ -72,10 +72,13 @@ CREATE TABLE IF NOT EXISTS shift_requests (
     type request_type NOT NULL,
     target_date DATE NOT NULL,
     target_shift_id UUID NOT NULL REFERENCES shifts(id) ON DELETE CASCADE,
+    target_start_time TIME,
+    target_end_time TIME,
     reason TEXT,
     status request_status NOT NULL DEFAULT 'PENDING',
     operator_id UUID REFERENCES users(id),
     decided_at TIMESTAMPTZ,
+    cancelled_after_approval BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

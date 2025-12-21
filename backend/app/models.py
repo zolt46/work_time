@@ -174,6 +174,8 @@ class ShiftRequest(Base):
         ForeignKey("shifts.id", ondelete="CASCADE"),
         nullable=False,
     )
+    target_start_time = Column(Time)
+    target_end_time = Column(Time)
     reason = Column(String)
     status = Column(
         Enum(RequestStatus),
@@ -185,6 +187,8 @@ class ShiftRequest(Base):
         ForeignKey("users.id"),
     )
     decided_at = Column(DateTime(timezone=True))
+    cancelled_after_approval = Column(Boolean, nullable=False, default=False)
+    cancel_reason = Column(String)
     created_at = Column(
         DateTime(timezone=True),
         nullable=False,

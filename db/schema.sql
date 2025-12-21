@@ -11,7 +11,17 @@ DO $$ BEGIN
         CREATE TYPE request_type AS ENUM ('ABSENCE', 'EXTRA');
     END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'request_status') THEN
-        CREATE TYPE request_status AS ENUM ('PENDING', 'APPROVED', 'REJECTED');
+        CREATE TYPE request_status AS ENUM ('PENDING', 'APPROVED', 'REJECTED', 'CANCELLED');
+    ELSE
+        IF NOT EXISTS (
+            SELECT 1
+            FROM pg_type t
+            JOIN pg_enum e ON t.oid = e.enumtypid
+            WHERE t.typname = 'request_status'
+              AND e.enumlabel = 'CANCELLED'
+        ) THEN
+            ALTER TYPE request_status ADD VALUE IF NOT EXISTS 'CANCELLED';
+        END IF;
     END IF;
 END $$;
 
@@ -62,10 +72,14 @@ CREATE TABLE IF NOT EXISTS shift_requests (
     type request_type NOT NULL,
     target_date DATE NOT NULL,
     target_shift_id UUID NOT NULL REFERENCES shifts(id) ON DELETE CASCADE,
+    target_start_time TIME,
+    target_end_time TIME,
     reason TEXT,
     status request_status NOT NULL DEFAULT 'PENDING',
     operator_id UUID REFERENCES users(id),
     decided_at TIMESTAMPTZ,
+    cancelled_after_approval BOOLEAN NOT NULL DEFAULT FALSE,
+    cancel_reason TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

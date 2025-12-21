@@ -79,6 +79,15 @@ function shiftLabel(shiftId) {
   return shift ? `${days[shift.weekday]} ${shift.start_time}~${shift.end_time}` : shiftId;
 }
 
+function requestTimeLabel(req) {
+  if (req.target_start_time && req.target_end_time) {
+    const start = req.target_start_time.slice(0, 5);
+    const end = req.target_end_time.slice(0, 5);
+    return `${start}~${end}`;
+  }
+  return null;
+}
+
 function typeLabel(type) {
   return type === 'ABSENCE' ? '결근' : '추가 근무';
 }
@@ -302,22 +311,29 @@ async function submitRequest(event) {
   const shiftIds = [];
   try {
     const ranges = slotsToRanges(type === 'ABSENCE');
+    const targetRanges = [];
     if (type === 'ABSENCE') {
       ranges.forEach((r) => {
         if (!r.shift_id) throw new Error('배정되지 않은 시간은 결근으로 신청할 수 없습니다.');
         shiftIds.push(r.shift_id);
+        targetRanges.push({ shift_id: r.shift_id, start_hour: r.start_hour, end_hour: r.end_hour });
       });
     } else {
       for (const r of ranges) {
         const shift = await ensureSlotRange(r.weekday, r.start_hour, r.end_hour);
         shiftIds.push(shift.id);
+        targetRanges.push({
+          shift_id: shift.id,
+          start_hour: parseInt(shift.start_time.split(':')[0], 10),
+          end_hour: parseInt(shift.end_time.split(':')[0], 10)
+        });
       }
     }
     const uniqueShiftIds = [...new Set(shiftIds)];
     await apiRequestWithRetry('/requests', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type, target_date, target_shift_ids: uniqueShiftIds, reason, user_id })
+      body: JSON.stringify({ type, target_date, target_shift_ids: uniqueShiftIds, target_ranges: targetRanges, reason, user_id })
     }, { retries: 2, delayMs: 600 });
     alert('요청이 접수되었습니다.');
     resetSelection();
@@ -367,7 +383,7 @@ async function loadMyRequests() {
     empty.className = 'muted';
     empty.textContent = '접수된 신청이 없습니다.';
     list.appendChild(empty);
-    return;
+    return true;
   }
   data.forEach((r) => {
     const container = document.createElement('div');
@@ -377,16 +393,20 @@ async function loadMyRequests() {
     badge.textContent = statusLabel[r.status] || r.status;
     const header = document.createElement('div');
     header.className = 'request-header';
-    header.innerHTML = `<strong>${typeLabel(r.type)}</strong> · ${r.target_date} · ${shiftLabel(r.target_shift_id)}`;
+    const timeLabel = requestTimeLabel(r);
+    const shiftText = shiftLabel(r.target_shift_id);
+    header.innerHTML = `<strong>${typeLabel(r.type)}</strong> · ${r.target_date} · ${shiftText}${timeLabel ? ' (' + timeLabel + ')' : ''}`;
     header.appendChild(badge);
 
     const reason = document.createElement('div');
     reason.className = 'small muted';
-    reason.textContent = `사유: ${r.reason || '-'}`;
+    const cancelNote = r.cancelled_after_approval ? ' (승인 후 취소됨)' : '';
+    const rejectNote = r.status === 'REJECTED' ? ' (거절됨)' : '';
+    reason.textContent = `사유: ${r.reason || '-'}${cancelNote || rejectNote}`;
     container.appendChild(header);
     container.appendChild(reason);
 
-    if (r.status !== 'CANCELLED') {
+    if (r.status === 'PENDING' || r.status === 'APPROVED') {
       const cancelBtn = document.createElement('button');
       cancelBtn.className = 'btn tiny muted';
       cancelBtn.textContent = '신청 취소';
@@ -413,7 +433,9 @@ async function loadPendingRequests() {
   data.forEach((r) => {
     const requester = userMap[r.user_id];
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${requester ? requester.name : r.user_id}</td><td>${typeLabel(r.type)}</td><td>${r.target_date}</td><td>${shiftLabel(r.target_shift_id)}</td><td>${r.reason || ''}</td><td>${statusLabel[r.status] || r.status}</td>`;
+    const timeLabel = requestTimeLabel(r);
+    const shiftText = `${shiftLabel(r.target_shift_id)}${timeLabel ? ` (${timeLabel})` : ''}`;
+    tr.innerHTML = `<td>${requester ? requester.name : r.user_id}</td><td>${typeLabel(r.type)}</td><td>${r.target_date}</td><td>${shiftText}</td><td>${r.reason || ''}</td><td>${statusLabel[r.status] || r.status}</td>`;
     const tdAction = document.createElement('td');
     const approve = document.createElement('button');
     approve.textContent = '승인';
@@ -433,6 +455,7 @@ async function loadPendingRequests() {
 async function act(id, action) {
   await apiRequest(`/requests/${id}/${action}`, { method: 'POST' });
   await loadPendingRequests();
+  await loadRequestFeed();
 }
 
 async function loadRequestUsers(current) {
@@ -486,4 +509,26 @@ async function initRequestPage(current) {
   if (form) form.addEventListener('submit', submitRequest);
 }
 
-export { submitRequest, loadMyRequests, loadPendingRequests, initRequestPage, setShiftCache };
+async function loadRequestFeed() {
+  const tbody = document.getElementById('request-feed-body');
+  if (!tbody) return;
+  const [data, users] = await Promise.all([
+    apiRequest('/requests/feed'),
+    apiRequest('/users')
+  ]);
+  await ensureShifts();
+  const userMap = Object.fromEntries(users.map((u) => [u.id, u]));
+  tbody.innerHTML = '';
+  data.forEach((r) => {
+    const requester = userMap[r.user_id];
+    const timeLabel = requestTimeLabel(r);
+    const shiftText = `${shiftLabel(r.target_shift_id)}${timeLabel ? ` (${timeLabel})` : ''}`;
+    const statusText = statusLabel[r.status] || r.status;
+    const statusExtra = r.cancelled_after_approval ? ' (승인 후 취소됨)' : r.status === 'REJECTED' ? ' (거절)' : '';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${requester ? requester.name : r.user_id}</td><td>${typeLabel(r.type)}</td><td>${r.target_date}</td><td>${shiftText}</td><td>${statusText}${statusExtra}</td><td>${r.reason || ''}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+export { submitRequest, loadMyRequests, loadPendingRequests, loadRequestFeed, initRequestPage, setShiftCache };

@@ -79,6 +79,15 @@ function shiftLabel(shiftId) {
   return shift ? `${days[shift.weekday]} ${shift.start_time}~${shift.end_time}` : shiftId;
 }
 
+function formatRequestTime(req) {
+  if (req.target_start_time && req.target_end_time) {
+    const start = req.target_start_time.slice(0, 5);
+    const end = req.target_end_time.slice(0, 5);
+    return `${start}~${end}`;
+  }
+  return null;
+}
+
 function typeLabel(type) {
   return type === 'ABSENCE' ? '결근' : '추가 근무';
 }
@@ -413,7 +422,10 @@ async function loadPendingRequests() {
   data.forEach((r) => {
     const requester = userMap[r.user_id];
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${requester ? requester.name : r.user_id}</td><td>${typeLabel(r.type)}</td><td>${r.target_date}</td><td>${shiftLabel(r.target_shift_id)}</td><td>${r.reason || ''}</td><td>${statusLabel[r.status] || r.status}</td>`;
+    const timeText = formatRequestTime(r);
+    const shiftText = `${shiftLabel(r.target_shift_id)}${timeText ? ` (${timeText})` : ''}`;
+    const statusText = r.status === 'REJECTED' ? '거절/취소' : (statusLabel[r.status] || r.status);
+    tr.innerHTML = `<td>${requester ? requester.name : r.user_id}</td><td>${typeLabel(r.type)}</td><td>${r.target_date}</td><td>${shiftText}</td><td>${r.reason || ''}</td><td>${statusText}</td>`;
     const tdAction = document.createElement('td');
     const approve = document.createElement('button');
     approve.textContent = '승인';

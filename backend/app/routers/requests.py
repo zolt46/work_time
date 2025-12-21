@@ -114,6 +114,16 @@ def pending_requests(db: Session = Depends(get_db), current=Depends(require_role
     )
 
 
+@router.get("/feed", response_model=list[schemas.RequestOut])
+def request_feed(db: Session = Depends(get_db), current=Depends(require_role(models.UserRole.OPERATOR))):
+    return (
+        db.query(models.ShiftRequest)
+        .order_by(models.ShiftRequest.created_at.desc())
+        .limit(50)
+        .all()
+    )
+
+
 @router.post("/{request_id}/cancel", response_model=schemas.RequestOut)
 def cancel_request(request_id: str, db: Session = Depends(get_db), current=Depends(require_role(models.UserRole.MEMBER))):
     req = db.query(models.ShiftRequest).filter(models.ShiftRequest.id == request_id).first()

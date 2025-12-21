@@ -88,10 +88,9 @@ table.table tbody tr:hover { background: #f8fafc; }
 }
 .timetable-times {
   display: grid;
-  grid-template-rows: repeat(var(--hour-rows, 12), var(--hour-height, 44px));
+  grid-template-rows: repeat(var(--hour-rows, 12), minmax(var(--hour-height, 44px), auto));
   background: #f8fafc;
   border-right: 1px solid var(--border);
-  height: calc(var(--hour-rows, 12) * var(--hour-height, 44px));
 }
 .timetable-times .time-label {
   padding: 6px 10px;
@@ -101,16 +100,9 @@ table.table tbody tr:hover { background: #f8fafc; }
 }
 .timetable-column {
   display: grid;
-  grid-template-rows: repeat(var(--hour-rows, 12), var(--hour-height, 44px));
+  grid-template-rows: repeat(var(--hour-rows, 12), minmax(var(--hour-height, 44px), auto));
   border-left: 1px solid var(--border);
-  height: calc(var(--hour-rows, 12) * var(--hour-height, 44px));
-  background: repeating-linear-gradient(
-    to bottom,
-    transparent 0,
-    transparent calc(var(--hour-height, 44px) - 1px),
-    #f8fafc calc(var(--hour-height, 44px) - 1px),
-    #f8fafc var(--hour-height, 44px)
-  );
+  background: #fff;
 }
 .timetable-cell {
   border-bottom: 1px solid var(--border);

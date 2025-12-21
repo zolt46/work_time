@@ -19,7 +19,7 @@
    ```
 
 ### 기존 DB 업데이트
-기존 배포본에는 `request_status` enum의 `CANCELLED` 값과 부분 결근 시간/승인 후 취소 플래그 컬럼이 없을 수 있습니다. 이미 생성된 데이터베이스에서는 다음 구문으로 enum과 컬럼을 추가해 주세요.
+이전 배포본에는 `request_status` enum의 `CANCELLED` 값과 부분 결근 시간·취소 플래그 컬럼이 없을 수 있습니다. 이미 생성된 데이터베이스에서는 다음 구문으로 enum과 컬럼을 추가해 주세요.
 
 ```sql
 DO $$
@@ -38,7 +38,8 @@ BEGIN
     ALTER TABLE IF EXISTS shift_requests
         ADD COLUMN IF NOT EXISTS target_start_time TIME,
         ADD COLUMN IF NOT EXISTS target_end_time TIME,
-        ADD COLUMN IF NOT EXISTS cancelled_after_approval BOOLEAN NOT NULL DEFAULT FALSE;
+        ADD COLUMN IF NOT EXISTS cancelled_after_approval BOOLEAN NOT NULL DEFAULT FALSE,
+        ADD COLUMN IF NOT EXISTS cancel_reason TEXT;
 END$$;
 ```
 

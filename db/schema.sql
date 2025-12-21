@@ -79,6 +79,7 @@ CREATE TABLE IF NOT EXISTS shift_requests (
     operator_id UUID REFERENCES users(id),
     decided_at TIMESTAMPTZ,
     cancelled_after_approval BOOLEAN NOT NULL DEFAULT FALSE,
+    cancel_reason TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

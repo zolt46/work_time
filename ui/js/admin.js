@@ -414,6 +414,7 @@ async function assignShift(event) {
   } catch (e) {
     alert(e.message || '근무 배정 중 오류가 발생했습니다.');
   } finally {
+    await refreshAssignedSlotsForUser();
     setButtonLoading(submitBtn, false, '선택 슬롯 배정');
   }
 }

@@ -18,6 +18,31 @@
    \i db/seed.sql
    ```
 
+### 기존 DB 업데이트
+이전 배포본에는 `request_status` enum의 `CANCELLED` 값과 부분 결근 시간·취소 플래그 컬럼이 없을 수 있습니다. 이미 생성된 데이터베이스에서는 다음 구문으로 enum과 컬럼을 추가해 주세요.
+
+```sql
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'request_status') THEN
+        IF NOT EXISTS (
+            SELECT 1
+            FROM pg_type t
+            JOIN pg_enum e ON t.oid = e.enumtypid
+            WHERE t.typname = 'request_status'
+              AND e.enumlabel = 'CANCELLED'
+        ) THEN
+            ALTER TYPE request_status ADD VALUE IF NOT EXISTS 'CANCELLED';
+        END IF;
+    END IF;
+    ALTER TABLE IF EXISTS shift_requests
+        ADD COLUMN IF NOT EXISTS target_start_time TIME,
+        ADD COLUMN IF NOT EXISTS target_end_time TIME,
+        ADD COLUMN IF NOT EXISTS cancelled_after_approval BOOLEAN NOT NULL DEFAULT FALSE,
+        ADD COLUMN IF NOT EXISTS cancel_reason TEXT;
+END$$;
+```
+
 ## 백엔드 환경 변수
 Render나 로컬 실행 시 다음 환경 변수를 설정해야 합니다(미설정 시 애플리케이션이 시작되지 않음).
 - `DATABASE_URL` (예: `postgresql://user:pass@host:5432/dbname`)

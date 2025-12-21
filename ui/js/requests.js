@@ -249,7 +249,7 @@ async function refreshAssignedSlots() {
   const dateStr = document.getElementById('req-date').value || new Date().toISOString().slice(0, 10);
   if (!userId || !dateStr) {
     applyDayDisable();
-    return;
+    return true;
   }
 
   const params = new URLSearchParams({ start: getWeekStart(dateStr), user_id: userId });
@@ -363,10 +363,20 @@ async function cancelRequest(id) {
 
 async function loadMyRequests() {
   const list = document.getElementById('my-requests');
-  if (!list) return;
+  if (!list) return true;
+  const title = list.closest('.card')?.querySelector('.card-title');
   let data;
+  const targetUserId = getTargetUserId();
+  const params = new URLSearchParams();
+  if (currentUser && targetUserId && targetUserId !== currentUser.id) {
+    params.set('user_id', targetUserId);
+    if (title) title.textContent = '신청 현황 (선택 대상 기준)';
+  } else if (title) {
+    title.textContent = '내 신청 현황';
+  }
   try {
-    data = await apiRequestWithRetry('/requests/my');
+    const path = params.toString() ? `/requests/my?${params.toString()}` : '/requests/my';
+    data = await apiRequestWithRetry(path);
   } catch (e) {
     console.error('내 신청 불러오기 실패', e);
     list.innerHTML = '';
@@ -382,8 +392,8 @@ async function loadMyRequests() {
     const empty = document.createElement('div');
     empty.className = 'muted';
     empty.textContent = '접수된 신청이 없습니다.';
-    list.appendChild(empty);
-    return;
+      list.appendChild(empty);
+      return true;
   }
   data.forEach((r) => {
     const container = document.createElement('div');
@@ -490,7 +500,10 @@ function bindFormEvents() {
   if (typeSelect) typeSelect.addEventListener('change', () => {
     resetSelection();
   });
-  if (userSelect) userSelect.addEventListener('change', refreshAssignedSlots);
+  if (userSelect) userSelect.addEventListener('change', async () => {
+    await refreshAssignedSlots();
+    await loadMyRequests();
+  });
 }
 
 function initSlotSelection() {

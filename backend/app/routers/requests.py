@@ -35,6 +35,21 @@ def _assert_same_weekday(target_date, shift):
         raise HTTPException(status_code=400, detail="선택한 날짜와 슬롯의 요일이 일치하지 않습니다")
 
 
+def _time_window_from_range(start_hour: int | None, end_hour: int | None):
+    if start_hour is None or end_hour is None:
+        return None, None
+    if start_hour >= end_hour:
+        raise HTTPException(status_code=400, detail="시간 범위가 올바르지 않습니다")
+    return datetime.strptime(f"{start_hour:02d}:00", "%H:%M").time(), datetime.strptime(f"{end_hour:02d}:00", "%H:%M").time()
+
+
+def _overlaps(a_start, a_end, b_start, b_end):
+    # None means full range
+    if a_start is None or a_end is None or b_start is None or b_end is None:
+        return True
+    return a_start < b_end and b_start < a_end
+
+
 @router.post("", response_model=list[schemas.RequestOut], status_code=status.HTTP_201_CREATED)
 def submit_request(payload: schemas.RequestCreate, current=Depends(require_role(models.UserRole.MEMBER)), db: Session = Depends(get_db)):
     target_user_id = payload.user_id or current.id
@@ -117,10 +132,21 @@ def submit_request(payload: schemas.RequestCreate, current=Depends(require_role(
 
 
 @router.get("/my", response_model=list[schemas.RequestOut])
-def my_requests(current=Depends(require_role(models.UserRole.MEMBER)), db: Session = Depends(get_db)):
+def my_requests(
+    user_id: str | None = None,
+    current=Depends(require_role(models.UserRole.MEMBER)),
+    db: Session = Depends(get_db),
+):
+    target_id = user_id or str(current.id)
+    if current.role == models.UserRole.MEMBER and target_id != str(current.id):
+        raise HTTPException(status_code=403, detail="다른 사용자의 신청 내역을 조회할 수 없습니다")
+
+    target_user = db.query(models.User).filter(models.User.id == target_id).first()
+    if not target_user:
+        raise HTTPException(status_code=404, detail="신청 대상 사용자를 찾을 수 없습니다")
     return (
         db.query(models.ShiftRequest)
-        .filter(models.ShiftRequest.user_id == current.id)
+        .filter(models.ShiftRequest.user_id == target_id)
         .order_by(models.ShiftRequest.created_at.desc())
         .all()
     )
@@ -130,7 +156,13 @@ def my_requests(current=Depends(require_role(models.UserRole.MEMBER)), db: Sessi
 def pending_requests(db: Session = Depends(get_db), current=Depends(require_role(models.UserRole.OPERATOR))):
     return (
         db.query(models.ShiftRequest)
-        .filter(models.ShiftRequest.status == models.RequestStatus.PENDING)
+        .filter(
+            (models.ShiftRequest.status == models.RequestStatus.PENDING)
+            | (
+                (models.ShiftRequest.status == models.RequestStatus.CANCELLED)
+                & (models.ShiftRequest.cancelled_after_approval == True)
+            )
+        )
         .order_by(models.ShiftRequest.created_at.desc())
         .all()
     )
@@ -222,7 +254,7 @@ def reject_request(request_id: str, db: Session = Depends(get_db), current=Depen
         action="REQUEST_REJECT",
         target_user_id=str(req.user_id),
         request_id=str(req.id),
-        details={"type": req.type.value},
+        details={"type": req.type.value, "cancel_reason": "REJECTED"},
     )
     db.commit()
     return req

@@ -79,6 +79,31 @@ function shiftLabel(shiftId) {
   return shift ? `${days[shift.weekday]} ${shift.start_time}~${shift.end_time}` : shiftId;
 }
 
+function formatRequestTime(req) {
+  if (req.target_start_time && req.target_end_time) {
+    const start = req.target_start_time.slice(0, 5);
+    const end = req.target_end_time.slice(0, 5);
+    return `${start}~${end}`;
+  }
+  return '';
+}
+
+function requestTimeLabel(req) {
+  const explicit = formatRequestTime(req);
+  if (explicit) return explicit;
+  if (shiftCache) {
+    const shift = shiftCache.find((s) => s.id === req.target_shift_id);
+    if (shift?.start_time && shift?.end_time) {
+      return `${shift.start_time.slice(0, 5)}~${shift.end_time.slice(0, 5)}`;
+    }
+  }
+  return '';
+}
+
+if (typeof window !== 'undefined') {
+  window.requestTimeLabel = requestTimeLabel;
+}
+
 function typeLabel(type) {
   return type === 'ABSENCE' ? '결근' : '추가 근무';
 }
@@ -377,12 +402,18 @@ async function loadMyRequests() {
     badge.textContent = statusLabel[r.status] || r.status;
     const header = document.createElement('div');
     header.className = 'request-header';
-    header.innerHTML = `<strong>${typeLabel(r.type)}</strong> · ${r.target_date} · ${shiftLabel(r.target_shift_id)}`;
+    const timeText = requestTimeLabel(r);
+    const shiftText = shiftLabel(r.target_shift_id);
+    header.innerHTML = `<strong>${typeLabel(r.type)}</strong> · ${r.target_date} · ${shiftText}${timeText ? ` (${timeText})` : ''}`;
     header.appendChild(badge);
 
     const reason = document.createElement('div');
     reason.className = 'small muted';
-    reason.textContent = `사유: ${r.reason || '-'}`;
+    const notes = [];
+    if (r.status === 'REJECTED') notes.push('거절됨');
+    if (r.cancelled_after_approval) notes.push('승인 후 취소됨');
+    const noteText = notes.length ? ` (${notes.join(', ')})` : '';
+    reason.textContent = `사유: ${r.reason || '-'}${noteText}`;
     container.appendChild(header);
     container.appendChild(reason);
 
@@ -413,7 +444,10 @@ async function loadPendingRequests() {
   data.forEach((r) => {
     const requester = userMap[r.user_id];
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${requester ? requester.name : r.user_id}</td><td>${typeLabel(r.type)}</td><td>${r.target_date}</td><td>${shiftLabel(r.target_shift_id)}</td><td>${r.reason || ''}</td><td>${statusLabel[r.status] || r.status}</td>`;
+    const timeText = requestTimeLabel(r);
+    const shiftText = `${shiftLabel(r.target_shift_id)}${timeText ? ` (${timeText})` : ''}`;
+    const statusText = r.status === 'REJECTED' ? '거절/취소' : (statusLabel[r.status] || r.status);
+    tr.innerHTML = `<td>${requester ? requester.name : r.user_id}</td><td>${typeLabel(r.type)}</td><td>${r.target_date}</td><td>${shiftText}</td><td>${r.reason || ''}</td><td>${statusText}</td>`;
     const tdAction = document.createElement('td');
     const approve = document.createElement('button');
     approve.textContent = '승인';
@@ -486,4 +520,4 @@ async function initRequestPage(current) {
   if (form) form.addEventListener('submit', submitRequest);
 }
 
-export { submitRequest, loadMyRequests, loadPendingRequests, initRequestPage, setShiftCache };
+export { submitRequest, loadMyRequests, loadPendingRequests, initRequestPage, setShiftCache, requestTimeLabel };

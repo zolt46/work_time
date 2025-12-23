@@ -210,6 +210,8 @@ const initLoginShell = previous?.initLoginShell || (async () => {
           loginProgress.textContent = `서버 준비 중... 자동 재시도 (${attemptLabel})`;
         }
       }
+    } catch (e) {
+      console.error('사용자 정보를 불러오지 못했습니다.', e);
     }
   );
   if (loginProgress) loginProgress.textContent = '로그인 정보를 입력하세요';

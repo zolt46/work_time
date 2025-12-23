@@ -114,6 +114,12 @@ function showPasswordPrompt(user) {
   });
 }
 
+function enforcePageAccess(activePage, role) {
+  const activeLink = document.querySelector(`.nav-link[data-page="${activePage}"]`);
+  if (!activeLink) return true;
+  return isLinkAllowed(activeLink, role);
+}
+
 function wireCommonActions() {
   const logoutBtn = document.getElementById('logout-btn');
   if (logoutBtn) logoutBtn.onclick = () => logout(true);

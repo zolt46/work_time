@@ -1,6 +1,6 @@
 // File: /ui/js/profile.js
 import { apiRequest, redirectToLogin } from './api.js';
-import { setupPasswordToggle } from './auth.js';
+import { setupPasswordToggle, markPasswordUpdated } from './auth.js';
 
 const roleLabel = {
   MASTER: '마스터',
@@ -83,6 +83,7 @@ function bindAccountForm() {
       renderProfile(updated);
       form.reset();
       showAccountWarning('계정 정보가 업데이트되었습니다.', ['필요 시 다시 로그인하세요.']);
+      markPasswordUpdated();
     } catch (err) {
       const message = err?.message || '업데이트에 실패했습니다.';
       const tips = [];
@@ -105,6 +106,7 @@ function bindResetButtons(role) {
     OPERATOR: ['members'],
     MEMBER: []
   };
+  const resetCard = document.getElementById('reset-card');
   buttons.forEach((btn) => {
     const scope = btn.dataset.resetScope;
     const isAllowed = allowedByRole[role]?.includes(scope);
@@ -128,6 +130,30 @@ function bindResetButtons(role) {
       }
     });
   });
+  if (resetCard) {
+    const anyVisible = Array.from(buttons).some((b) => b.style.display !== 'none');
+    resetCard.style.display = anyVisible ? '' : 'none';
+  }
+}
+
+function applyProfileVisibility(role) {
+  const visibleUsersCard = document.getElementById('visible-users-card');
+  const resetCard = document.getElementById('reset-card');
+  const assignmentsCard = document.getElementById('assignments-card');
+
+  if (role === 'MEMBER') {
+    if (visibleUsersCard) visibleUsersCard.style.display = 'none';
+    if (resetCard) resetCard.style.display = 'none';
+    if (assignmentsCard) assignmentsCard.style.display = '';
+  } else if (role === 'OPERATOR') {
+    if (visibleUsersCard) visibleUsersCard.style.display = '';
+    if (resetCard) resetCard.style.display = '';
+    if (assignmentsCard) assignmentsCard.style.display = 'none';
+  } else {
+    if (visibleUsersCard) visibleUsersCard.style.display = '';
+    if (resetCard) resetCard.style.display = '';
+    if (assignmentsCard) assignmentsCard.style.display = '';
+  }
 }
 
 async function attachProfilePage(user) {
@@ -135,7 +161,10 @@ async function attachProfilePage(user) {
   renderProfile(user);
   bindAccountForm();
   bindResetButtons(user.role);
-  await loadVisibleUsers();
+  applyProfileVisibility(user.role);
+  if (user.role !== 'MEMBER') {
+    await loadVisibleUsers();
+  }
 }
 
 export { attachProfilePage };

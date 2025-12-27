@@ -29,6 +29,66 @@ function getWeekStart(dateStr) {
   return formatDateOnly(start);
 }
 
+function nextWeekdayOnOrAfter(date, weekday) {
+  const candidate = new Date(date);
+  const delta = (weekday - candidate.getDay() + 7) % 7;
+  candidate.setDate(candidate.getDate() + delta);
+  return candidate;
+}
+
+function previousWeekdayOnOrBefore(date, weekday) {
+  const candidate = new Date(date);
+  const delta = (candidate.getDay() - weekday + 7) % 7;
+  candidate.setDate(candidate.getDate() - delta);
+  return candidate;
+}
+
+function getOccurrenceOnOrAfter(assignment, referenceDate) {
+  if (!assignment?.valid_from || assignment.shift?.weekday === undefined) return null;
+  const fromDate = parseDateValue(assignment.valid_from);
+  const toDate = assignment.valid_to ? parseDateValue(assignment.valid_to) : null;
+  const weekday = assignment.shift.weekday;
+  const startDate = referenceDate > fromDate ? referenceDate : fromDate;
+  const candidate = nextWeekdayOnOrAfter(startDate, weekday);
+  if (toDate && candidate > toDate) return null;
+  return candidate;
+}
+
+function getOccurrenceOnOrBefore(assignment, referenceDate) {
+  if (!assignment?.valid_from || assignment.shift?.weekday === undefined) return null;
+  const fromDate = parseDateValue(assignment.valid_from);
+  const toDate = assignment.valid_to ? parseDateValue(assignment.valid_to) : null;
+  const weekday = assignment.shift.weekday;
+  const endDate = toDate && toDate < referenceDate ? toDate : referenceDate;
+  const candidate = previousWeekdayOnOrBefore(endDate, weekday);
+  if (candidate < fromDate) return null;
+  return candidate;
+}
+
+function pickRelevantWeekStart(assignments = []) {
+  if (!assignments.length) return null;
+  const today = new Date();
+  const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  let nextOccurrence = null;
+  let lastOccurrence = null;
+
+  assignments.forEach((assignment) => {
+    const upcoming = getOccurrenceOnOrAfter(assignment, todayOnly);
+    if (upcoming && (!nextOccurrence || upcoming < nextOccurrence)) {
+      nextOccurrence = upcoming;
+    }
+    const previous = getOccurrenceOnOrBefore(assignment, todayOnly);
+    if (previous && (!lastOccurrence || previous > lastOccurrence)) {
+      lastOccurrence = previous;
+    }
+  });
+
+  const chosen = nextOccurrence || lastOccurrence;
+  if (chosen) return getWeekStart(formatDateOnly(chosen));
+  const fallback = assignments.find((assignment) => assignment.valid_from);
+  return fallback ? getWeekStart(fallback.valid_from) : null;
+}
+
 function normalizeEvents(assignments = []) {
   if (!assignments.length) return [];
   if (assignments[0].shift) return assignments;
@@ -224,7 +284,16 @@ function renderTimeline(assignments, targetId, { hourHeight = 44 } = {}) {
 async function loadGlobalSchedule(targetId = 'schedule-container', options = {}) {
   const start = getWeekStart();
   const params = new URLSearchParams({ start });
-  const events = await apiRequest(`/schedule/weekly_view?${params.toString()}`);
+  let events = await apiRequest(`/schedule/weekly_view?${params.toString()}`);
+  if (!events.length) {
+    const snapshot = await apiRequest('/schedule/global');
+    const assignments = snapshot?.assignments || [];
+    const fallbackStart = pickRelevantWeekStart(assignments);
+    if (fallbackStart && fallbackStart !== start) {
+      const fallbackParams = new URLSearchParams({ start: fallbackStart });
+      events = await apiRequest(`/schedule/weekly_view?${fallbackParams.toString()}`);
+    }
+  }
   renderTimeline(events, targetId, options);
   return events;
 }
@@ -232,7 +301,16 @@ async function loadGlobalSchedule(targetId = 'schedule-container', options = {})
 async function loadBaseSchedule(targetId = 'schedule-container', options = {}) {
   const start = getWeekStart();
   const params = new URLSearchParams({ start });
-  const events = await apiRequest(`/schedule/weekly_base?${params.toString()}`);
+  let events = await apiRequest(`/schedule/weekly_base?${params.toString()}`);
+  if (!events.length) {
+    const snapshot = await apiRequest('/schedule/global');
+    const assignments = snapshot?.assignments || [];
+    const fallbackStart = pickRelevantWeekStart(assignments);
+    if (fallbackStart && fallbackStart !== start) {
+      const fallbackParams = new URLSearchParams({ start: fallbackStart });
+      events = await apiRequest(`/schedule/weekly_base?${fallbackParams.toString()}`);
+    }
+  }
   renderTimeline(events, targetId, options);
   return events;
 }

@@ -27,7 +27,7 @@ DO $$ BEGIN
         CREATE TYPE notice_type AS ENUM ('DB_MAINTENANCE', 'SYSTEM_MAINTENANCE', 'WORK_SPECIAL', 'GENERAL');
     END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'notice_channel') THEN
-        CREATE TYPE notice_channel AS ENUM ('POPUP', 'BANNER', 'BOARD');
+        CREATE TYPE notice_channel AS ENUM ('POPUP', 'BANNER', 'POPUP_BANNER', 'NONE', 'BOARD');
     END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'notice_scope') THEN
         CREATE TYPE notice_scope AS ENUM ('ALL', 'ROLE', 'USER');

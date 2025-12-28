@@ -198,6 +198,271 @@ table.table tbody tr:hover { background: #f8fafc; }
 }
 
 .input-with-toggle { position: relative; }
+
+.notice-banner-container {
+  display: grid;
+  gap: 10px;
+  margin: 16px 24px 0;
+}
+
+.notice-banner {
+  border-radius: 12px;
+  padding: 8px 14px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.notice-banner-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.notice-banner-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #7c2d12;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.notice-banner-text strong {
+  font-weight: 700;
+}
+
+.notice-banner-body {
+  font-size: 13px;
+  opacity: 0.9;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.notice-banner-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.notice-banner-count {
+  font-size: 12px;
+  color: #c2410c;
+  font-weight: 600;
+}
+
+.notice-banner-tag {
+  background: #ffedd5;
+  color: #9a3412;
+  border-color: #fed7aa;
+}
+
+.notice-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #fff;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+}
+
+.notice-popup-backdrop .notice-popup {
+  max-width: 560px;
+}
+
+.notice-popup-title {
+  display: grid;
+  gap: 6px;
+}
+
+.notice-popup-backdrop .modal {
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.18);
+}
+
+.notice-popup-header {
+  border-bottom: 1px solid var(--border);
+}
+
+.notice-popup-body {
+  display: grid;
+  gap: 10px;
+  line-height: 1.6;
+}
+
+.notice-popup-footer {
+  border-top: 1px solid var(--border);
+}
+
+.notice-board {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.notice-board-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.notice-board-pill {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.notice-card {
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  padding: 14px 16px;
+  background: #fff;
+  display: grid;
+  gap: 8px;
+}
+
+.notice-card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.notice-card-title {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.notice-card-body {
+  color: #1f2937;
+  white-space: pre-wrap;
+}
+
+.notice-targets {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.notice-admin-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.notice-admin-row {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: #f8fafc;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.notice-admin-title {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.notice-admin-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.notice-status {
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: #e2e8f0;
+}
+
+.notice-form {
+  display: grid;
+  gap: 16px;
+}
+
+.form-section {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: #f8fafc;
+  display: grid;
+  gap: 12px;
+}
+
+.section-header h4 {
+  margin: 0 0 4px;
+}
+
+.section-header p {
+  margin: 0;
+}
+
+.field-help {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.notice-targets {
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #fff;
+}
+
+.notice-targets--roles::before,
+.notice-targets--users::before {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.notice-targets--roles::before {
+  content: "역할 대상 선택";
+}
+
+.notice-targets--users::before {
+  content: "개별 사용자 선택";
+}
+
+.channel-toggle {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.notice-snooze {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--muted);
+}
 .input-with-toggle input { padding-right: 48px; }
 .toggle-visibility {
   position: absolute;

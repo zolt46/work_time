@@ -20,4 +20,13 @@ BEGIN
     ) THEN
         ALTER TYPE notice_channel ADD VALUE IF NOT EXISTS 'NONE';
     END IF;
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_type t
+        JOIN pg_enum e ON t.oid = e.enumtypid
+        WHERE t.typname = 'notice_channel'
+          AND e.enumlabel = 'BOARD'
+    ) THEN
+        ALTER TYPE notice_channel ADD VALUE IF NOT EXISTS 'BOARD';
+    END IF;
 END$$;

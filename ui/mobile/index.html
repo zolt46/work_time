@@ -5,14 +5,15 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>다산 근무 관리자 - 로그인</title>
-  <link rel="stylesheet" href="css/base.css" />
-  <link rel="stylesheet" href="css/layout.css" />
-  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="../css/base.css" />
+  <link rel="stylesheet" href="../css/layout.css" />
+  <link rel="stylesheet" href="../css/components.css" />
+  <link rel="stylesheet" href="../css/mobile.css" />
 </head>
-<body class="login-body">
+<body class="login-body mobile-ui">
   <div class="login-shell">
     <div class="card login-card">
-      <div class="logo login-logo"><img src="assets/logo.png" width="40" height="40" alt="logo"/>다산 근무 관리자</div>
+      <div class="logo login-logo"><img src="../assets/logo.png" width="40" height="40" alt="logo"/>다산 근무 관리자</div>
       <form id="login-form" class="login-form">
         <label for="login_id">로그인 ID</label>
         <input id="login_id" required />
@@ -44,8 +45,8 @@
     </div>
   </div>
   <script type="module">
-    import { login, setupPasswordToggle } from './js/auth.js';
-    import { initLoginShell } from './js/layout.js';
+    import { login, setupPasswordToggle } from '../js/auth.js';
+    import { initLoginShell } from '../js/layout.js';
 
     await initLoginShell();
     setupPasswordToggle('password', 'toggle-login-password');

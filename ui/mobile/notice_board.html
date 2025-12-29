@@ -1,15 +1,16 @@
-<!-- File: /ui/html/schedule_overview.html -->
+<!-- File: /ui/html/notice_board.html -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>근무 시간표</title>
+  <title>공지사항 - 다산 근무 관리자</title>
   <link rel="stylesheet" href="../css/base.css" />
   <link rel="stylesheet" href="../css/layout.css" />
   <link rel="stylesheet" href="../css/components.css" />
+  <link rel="stylesheet" href="../css/mobile.css" />
 </head>
-<body class="app-loading">
+<body class="app-loading mobile-ui">
   <div id="app-shell-loader" class="app-shell-loader">
     <div class="spinner" aria-label="로딩 중"></div>
     <div class="muted">필요한 정보를 불러오는 중...</div>
@@ -17,7 +18,7 @@
   <header class="header">
     <div class="header-left">
       <button class="icon-btn" id="sidebar-toggle" aria-label="메뉴 열기">☰</button>
-      <div class="logo"><img src="../assets/logo.png" width="32" alt="logo" /> 근무 시간표</div>
+      <div class="logo"><img src="../assets/logo.png" width="32" alt="logo" /> 공지사항</div>
     </div>
     <div class="header-right">
       <div class="system-status-badge inline" id="status-card">
@@ -56,18 +57,19 @@
     </nav>
     <div class="sidebar-overlay" id="sidebar-overlay"></div>
     <main class="content">
-      <div class="card">
-        <div class="card-title">주간 근무 시간표</div>
-        <div id="schedule-container" class="loader">일정을 불러오는 중...</div>
+      <div class="card notice-board-card">
+        <div class="notice-board-header">
+          <div>
+            <div class="card-title">공지사항</div>
+            <div class="muted small">팝업/배너와 무관하게 모든 공지가 이곳에 정리됩니다.</div>
+          </div>
+          <span class="notice-board-pill">최신 순</span>
+        </div>
+        <div id="notice-empty" class="muted" style="display:none;">현재 등록된 공지가 없습니다.</div>
+        <div id="notice-list" class="notice-board"></div>
       </div>
     </main>
   </div>
-  <script type="module">
-    import { loadBaseSchedule } from '../js/schedule.js';
-    import { initAppLayout } from '../js/layout.js';
-
-    await initAppLayout('overview');
-    await loadBaseSchedule('schedule-container', { hourHeight: 46 });
-  </script>
+  <script type="module" src="../js/notice_board.js"></script>
 </body>
 </html>

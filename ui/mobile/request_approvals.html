@@ -1,15 +1,16 @@
-<!-- File: /ui/html/schedule_overview.html -->
+<!-- File: /ui/html/request_approvals.html -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>근무 시간표</title>
+  <title>변경 승인함</title>
   <link rel="stylesheet" href="../css/base.css" />
   <link rel="stylesheet" href="../css/layout.css" />
   <link rel="stylesheet" href="../css/components.css" />
+  <link rel="stylesheet" href="../css/mobile.css" />
 </head>
-<body class="app-loading">
+<body class="app-loading mobile-ui">
   <div id="app-shell-loader" class="app-shell-loader">
     <div class="spinner" aria-label="로딩 중"></div>
     <div class="muted">필요한 정보를 불러오는 중...</div>
@@ -17,7 +18,7 @@
   <header class="header">
     <div class="header-left">
       <button class="icon-btn" id="sidebar-toggle" aria-label="메뉴 열기">☰</button>
-      <div class="logo"><img src="../assets/logo.png" width="32" alt="logo" /> 근무 시간표</div>
+      <div class="logo"><img src="../assets/logo.png" width="32" alt="logo" /> 근무 변경 승인함</div>
     </div>
     <div class="header-right">
       <div class="system-status-badge inline" id="status-card">
@@ -56,18 +57,39 @@
     </nav>
     <div class="sidebar-overlay" id="sidebar-overlay"></div>
     <main class="content">
-      <div class="card">
-        <div class="card-title">주간 근무 시간표</div>
-        <div id="schedule-container" class="loader">일정을 불러오는 중...</div>
+      <div class="approvals-layout">
+        <div class="card">
+          <div class="card-title">대기 중인 근무 변경 요청</div>
+          <div class="table-wrap table-scroll">
+            <table class="table table-compact table-wider" id="pending-requests">
+              <thead>
+                <tr><th>신청자</th><th>유형</th><th>날짜</th><th>근무</th><th>사유</th><th>상태</th><th>작업</th></tr>
+              </thead>
+              <tbody id="pending-requests-body"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">최근 요청 흐름</div>
+          <div class="table-wrap table-scroll">
+            <table class="table table-compact table-wider">
+              <thead>
+                <tr><th>신청자</th><th>유형</th><th>날짜</th><th>근무</th><th>상태</th><th>사유</th><th>발생 시각</th></tr>
+              </thead>
+              <tbody id="request-feed-body"></tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </main>
   </div>
   <script type="module">
-    import { loadBaseSchedule } from '../js/schedule.js';
     import { initAppLayout } from '../js/layout.js';
+    import { loadPendingRequests, renderRequestFeed } from '../js/requests.js';
 
-    await initAppLayout('overview');
-    await loadBaseSchedule('schedule-container', { hourHeight: 46 });
+    await initAppLayout('approvals');
+    await loadPendingRequests();
+    await renderRequestFeed();
   </script>
 </body>
 </html>

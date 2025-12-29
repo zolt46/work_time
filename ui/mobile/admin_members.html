@@ -1,46 +1,54 @@
-<!-- File: /ui/html/admin_members.html -->
+<!-- File: /ui/mobile/admin_members.html -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>구성원 관리</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>구성원 관리 - 모바일</title>
   <link rel="stylesheet" href="../css/base.css" />
   <link rel="stylesheet" href="../css/layout.css" />
   <link rel="stylesheet" href="../css/components.css" />
+  <link rel="stylesheet" href="../css/mobile.css" />
   <script type="module">
-    import { redirectToMobileIfNeeded } from '../js/mobile.js';
-    redirectToMobileIfNeeded('../mobile/admin_members.html');
+    import { redirectToDesktopIfNeeded } from '../js/mobile.js';
+    redirectToDesktopIfNeeded('../html/admin_members.html');
   </script>
 </head>
-<body class="app-loading">
+<body class="mobile-app app-loading">
   <div id="app-shell-loader" class="app-shell-loader">
     <div class="spinner" aria-label="로딩 중"></div>
     <div class="muted">필요한 정보를 불러오는 중...</div>
   </div>
-  <header class="header">
-    <div class="header-left">
-      <button class="icon-btn" id="sidebar-toggle" aria-label="메뉴 열기">☰</button>
-      <div class="logo"><img src="../assets/logo.png" width="32" alt="logo" /> 구성원 관리</div>
-    </div>
-    <div class="header-right">
-      <div class="system-status-badge inline" id="status-card">
-        <div class="status-label">연결 상태</div>
-        <div class="system-status">
-          <span id="server-status" class="status-chip status-pending" title="서버 상태 확인 중">
-            <span class="status-dot"></span>
-            <span class="status-text">서버 확인 중</span>
-          </span>
-          <span id="db-status" class="status-chip status-pending" title="DB 상태 확인 중">
-            <span class="status-dot"></span>
-            <span class="status-text">DB 확인 중</span>
-          </span>
-        </div>
-        <div class="status-meta" id="status-meta">상태 체크 중...</div>
+  <header class="mobile-header">
+    <div class="mobile-top">
+      <div class="mobile-top-left">
+        <button class="icon-btn" id="sidebar-toggle" aria-label="메뉴 열기">☰</button>
+        <div class="mobile-brand"><img src="../assets/logo.png" alt="logo" />구성원 관리</div>
       </div>
-      <span id="session-countdown" class="status-chip session-timer"></span>
-      <button class="btn tiny secondary" id="extend-session" style="display:none;">세션 연장</button>
-      <div class="muted">안녕하세요, <span id="user-name"></span> (<span id="user-role"></span>)</div>
-      <button class="btn muted" id="logout-btn">로그아웃</button>
+      <button class="btn tiny muted" id="logout-btn">로그아웃</button>
+    </div>
+    <div class="mobile-status-row">
+      <div class="mobile-status-line">
+        <div class="system-status-badge">
+          <div class="status-label">연결 상태</div>
+          <div class="system-status">
+            <span id="server-status" class="status-chip status-pending" title="서버 상태 확인 중">
+              <span class="status-dot"></span>
+              <span class="status-text">서버 확인 중</span>
+            </span>
+            <span id="db-status" class="status-chip status-pending" title="DB 상태 확인 중">
+              <span class="status-dot"></span>
+              <span class="status-text">DB 확인 중</span>
+            </span>
+          </div>
+          <div class="status-meta" id="status-meta">상태 체크 중...</div>
+        </div>
+        <span id="session-countdown" class="status-chip session-timer"></span>
+      </div>
+      <div class="mobile-session">
+        <button class="btn tiny secondary" id="extend-session" style="display:none;">세션 연장</button>
+        <span class="mobile-user">안녕하세요, <span id="user-name"></span> (<span id="user-role"></span>)</span>
+      </div>
     </div>
   </header>
   <div class="page">
@@ -58,9 +66,9 @@
       <a class="nav-link" data-page="history" data-min-role="MASTER" href="history.html">변동 이력</a>
     </nav>
     <div class="sidebar-overlay" id="sidebar-overlay"></div>
-    <main class="content">
+    <main class="mobile-content">
       <div class="member-layout">
-        <div class="card member-card">
+        <section class="card member-card">
           <div class="card-title">구성원 목록</div>
           <p class="muted small">행을 눌러 선택/해제하세요. 검색·필터를 조합하면 시인성이 좋아집니다.</p>
           <div class="flex wrap member-filters">
@@ -78,7 +86,7 @@
             </select>
             <button class="btn tiny secondary" type="button" id="member-refresh">새로고침</button>
           </div>
-          <div class="table-wrap table-tall">
+          <div class="mobile-table">
             <table class="table table-compact table-wider" id="member-table">
               <thead><tr><th>이름</th><th>권한</th><th>개인 ID</th><th>로그인 ID</th><th>상태</th><th>최근 로그인</th></tr></thead>
               <tbody id="member-table-body"></tbody>
@@ -88,8 +96,8 @@
             <span id="member-count"></span>
             <span>행을 클릭하면 선택/해제됩니다.</span>
           </div>
-        </div>
-        <div class="card member-form-card">
+        </section>
+        <section class="card member-form-card">
           <div class="card-title">구성원 생성/수정</div>
           <p class="muted small" id="member-form-mode">신규 생성 후에는 임시 비밀번호를 전달하세요.</p>
           <form id="member-combined-form" class="stack">
@@ -134,7 +142,7 @@
             </div>
             <div class="muted small member-detail-box" id="member-detail">선택된 구성원이 없습니다. 새 입력을 진행하세요.</div>
           </form>
-        </div>
+        </section>
       </div>
     </main>
   </div>

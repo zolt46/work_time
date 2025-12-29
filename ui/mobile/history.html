@@ -1,0 +1,72 @@
+<!-- File: /ui/mobile/history.html -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>변동 이력 - 모바일</title>
+  <link rel="stylesheet" href="../css/base.css" />
+  <link rel="stylesheet" href="../css/components.css" />
+  <link rel="stylesheet" href="../css/mobile.css" />
+  <script type="module">
+    import { redirectToDesktopIfNeeded } from '../js/mobile.js';
+    redirectToDesktopIfNeeded('../html/history.html');
+  </script>
+</head>
+<body class="mobile-app app-loading">
+  <div id="app-shell-loader" class="app-shell-loader">
+    <div class="spinner" aria-label="로딩 중"></div>
+    <div class="muted">필요한 정보를 불러오는 중...</div>
+  </div>
+  <header class="mobile-header">
+    <div class="mobile-top">
+      <div class="mobile-brand"><img src="../assets/logo.png" alt="logo" />변동 이력</div>
+      <button class="btn tiny muted" id="logout-btn">로그아웃</button>
+    </div>
+    <div class="mobile-status-row">
+      <div class="system-status-badge">
+        <div class="status-label">연결 상태</div>
+        <div class="system-status">
+          <span id="server-status" class="status-chip status-pending" title="서버 상태 확인 중">
+            <span class="status-dot"></span>
+            <span class="status-text">서버 확인 중</span>
+          </span>
+          <span id="db-status" class="status-chip status-pending" title="DB 상태 확인 중">
+            <span class="status-dot"></span>
+            <span class="status-text">DB 확인 중</span>
+          </span>
+        </div>
+        <div class="status-meta" id="status-meta">상태 체크 중...</div>
+      </div>
+      <div class="mobile-session">
+        <span id="session-countdown" class="status-chip session-timer"></span>
+        <button class="btn tiny secondary" id="extend-session" style="display:none;">세션 연장</button>
+        <span class="mobile-user">안녕하세요, <span id="user-name"></span> (<span id="user-role"></span>)</span>
+      </div>
+    </div>
+  </header>
+  <main class="mobile-content">
+    <section class="card">
+      <div class="card-title">최근 이력 (최근 30일 · 최대 50건)</div>
+      <div id="history-status" class="muted">불러오는 중...</div>
+      <div class="mobile-table">
+        <table class="table" id="history-table">
+          <thead>
+            <tr><th>시간</th><th>동작</th><th>신청자</th><th>대상자</th><th>신청 ID</th><th>세부</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+  <script type="module">
+    import { initAppLayout } from '../js/layout.js';
+    import { loadHistory } from '../js/history.js';
+
+    const user = await initAppLayout('history');
+    if (user?.role === 'MASTER') {
+      await loadHistory(user);
+    }
+  </script>
+</body>
+</html>

@@ -1,7 +1,7 @@
 // File: /ui/js/schedule.js
 import { apiRequest } from './api.js';
 
-const days = ['월', '화', '수', '목', '금', '토', '일'];
+const days = ['월', '화', '수', '목', '금'];
 
 function parseDateValue(dateStr) {
   if (!dateStr) return new Date();
@@ -315,22 +315,20 @@ async function loadBaseSchedule(targetId = 'schedule-container', options = {}) {
   return events;
 }
 
-function renderCompactSchedule(assignments, targetId = 'schedule-summary') {
-  renderTimeline(assignments, targetId, { hourHeight: 38 });
+function renderCompactSchedule(assignments, targetId = 'schedule-summary', options = {}) {
+  const { hourHeight = 38 } = options;
+  renderTimeline(assignments, targetId, { hourHeight });
 }
 
-async function loadMySchedule() {
+async function loadMySchedule(user) {
   const listEl = document.getElementById('my-schedule');
   if (!listEl) return;
   listEl.classList.add('schedule-list');
-  const today = new Date();
-  const dayOffset = (today.getDay() + 6) % 7;
-  const weekStart = new Date(today);
-  weekStart.setDate(today.getDate() - dayOffset);
-  const params = new URLSearchParams({ start: weekStart.toISOString().slice(0, 10) });
-  const events = await apiRequest(`/schedule/weekly_base?${params.toString()}`);
+  const data = await apiRequest('/schedule/global');
+  const assignments = data?.assignments || [];
+  const mine = assignments.filter((assignment) => assignment.user?.id === user?.id);
   listEl.innerHTML = '';
-  if (!events.length) {
+  if (!mine.length) {
     const li = document.createElement('li');
     li.className = 'muted';
     li.textContent = '이번 주 배정된 근무가 없습니다.';
@@ -338,16 +336,22 @@ async function loadMySchedule() {
     return;
   }
   const dayNames = ['월', '화', '수', '목', '금', '토', '일'];
-  events.forEach((ev) => {
-    const dateObj = new Date(ev.date);
-    const weekday = dayNames[(dateObj.getDay() + 6) % 7];
+  const items = [];
+  mine.forEach((assignment) => {
+    if (!assignment.shift) return;
+    const weekday = dayNames[assignment.shift.weekday] || '-';
+    const timeText = `${assignment.shift.start_time.slice(0, 5)}~${assignment.shift.end_time.slice(0, 5)}`;
+    items.push({ key: `${weekday}-${timeText}`, weekday, timeText });
+  });
+  const seen = new Set();
+  items.forEach((item) => {
+    if (seen.has(item.key)) return;
+    seen.add(item.key);
     const li = document.createElement('li');
     li.className = 'schedule-item';
-    const dateText = `${ev.date} (${weekday})`;
-    const timeText = `${ev.start_time.slice(0, 5)}~${ev.end_time.slice(0, 5)}`;
     li.innerHTML = `
-      <span class="schedule-date">${dateText}</span>
-      <span class="schedule-time">${timeText}</span>
+      <span class="schedule-date">${item.weekday}</span>
+      <span class="schedule-time">${item.timeText}</span>
     `;
     listEl.appendChild(li);
   });

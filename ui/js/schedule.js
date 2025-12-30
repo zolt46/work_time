@@ -1,7 +1,7 @@
 // File: /ui/js/schedule.js
 import { apiRequest } from './api.js';
 
-const days = ['월', '화', '수', '목', '금', '토', '일'];
+const days = ['월', '화', '수', '목', '금'];
 
 function parseDateValue(dateStr) {
   if (!dateStr) return new Date();
@@ -315,8 +315,9 @@ async function loadBaseSchedule(targetId = 'schedule-container', options = {}) {
   return events;
 }
 
-function renderCompactSchedule(assignments, targetId = 'schedule-summary') {
-  renderTimeline(assignments, targetId, { hourHeight: 38 });
+function renderCompactSchedule(assignments, targetId = 'schedule-summary', options = {}) {
+  const { hourHeight = 38 } = options;
+  renderTimeline(assignments, targetId, { hourHeight });
 }
 
 async function loadMySchedule() {

@@ -7,6 +7,10 @@
   <link rel="stylesheet" href="../css/base.css" />
   <link rel="stylesheet" href="../css/layout.css" />
   <link rel="stylesheet" href="../css/components.css" />
+  <script type="module">
+    import { redirectToMobileIfNeeded } from '../js/mobile.js';
+    redirectToMobileIfNeeded('../mobile/member_profile.html');
+  </script>
 </head>
 <body class="app-loading">
   <div id="app-shell-loader" class="app-shell-loader">
@@ -43,7 +47,7 @@
     <nav class="sidebar" id="sidebar">
       <div class="sidebar-title">탐색</div>
       <a class="nav-link" data-page="dashboard" href="dashboard.html">대시보드</a>
-      <a class="nav-link" data-page="overview" href="schedule_overview.html">근무 시간표</a>
+      <a class="nav-link" data-page="overview" href="schedule_overview.html">근무 배정표</a>
       <a class="nav-link" data-page="profile" href="member_profile.html">내 프로필</a>
       <a class="nav-link" data-page="requests" data-roles="MASTER,MEMBER" href="request_center.html">근무 변경 신청</a>
       <a class="nav-link" data-page="approvals" data-roles="MASTER,OPERATOR" href="request_approvals.html">변경 승인함</a>
@@ -86,7 +90,7 @@
         </div>
         <div class="profile-column profile-side">
           <div class="card" id="account-card">
-            <div class="card-title">로그인 ID / 비밀번호 변경</div>
+            <div class="card-title">정보 변경</div>
             <form id="account-form" class="stack">
               <div class="input-with-toggle">
                 <input id="current-password" type="password" placeholder="현재 비밀번호" required />
@@ -110,7 +114,7 @@
             <div class="card-title">데이터 초기화</div>
             <p class="muted">권한에 따라 선택지가 다르게 보입니다. 데이터만 초기화하며 스키마는 유지합니다.</p>
             <div class="stack">
-              <button class="btn secondary" data-reset-scope="members">구성원 DB만 초기화</button>
+              <button class="btn secondary" data-reset-scope="members">구성원 DB 초기화</button>
               <button class="btn secondary" data-reset-scope="operators_members">운영자+구성원 DB 초기화</button>
               <button class="btn danger" data-reset-scope="all">전체 초기화 (마스터 계정 재생성)</button>
             </div>
@@ -128,7 +132,7 @@
     const user = await initAppLayout('profile');
     await attachProfilePage(user);
     if (user?.role !== 'OPERATOR') {
-      await loadMySchedule();
+      await loadMySchedule(user);
     }
   </script>
 </body>

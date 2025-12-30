@@ -1,7 +1,7 @@
 import { apiRequest } from './api.js';
 import { triggerNotificationsRefresh } from './notifications.js';
 
-const days = ['월', '화', '수', '목', '금', '토', '일'];
+const days = ['월', '화', '수', '목', '금'];
 const hours = Array.from({ length: 9 }, (_, i) => 9 + i); // 09~18시
 
 function sleep(ms) {
@@ -424,8 +424,16 @@ async function loadMyRequests() {
     header.className = 'request-header';
     const timeText = requestTimeLabel(r);
     const shiftText = shiftLabel(r.target_shift_id);
-    header.innerHTML = `<strong>${typeLabel(r.type)}</strong> · ${r.target_date} · ${shiftText}${timeText ? ` (${timeText})` : ''}`;
+    header.innerHTML = `<strong>${typeLabel(r.type)}</strong>`;
     header.appendChild(badge);
+
+    const metaList = document.createElement('div');
+    metaList.className = 'request-meta-list';
+    metaList.innerHTML = `
+      <div class="request-meta"><span class="meta-label">일자</span><span class="meta-value">${r.target_date || '-'}</span></div>
+      <div class="request-meta"><span class="meta-label">시간</span><span class="meta-value">${timeText || '-'}</span></div>
+      <div class="request-meta"><span class="meta-label">근무</span><span class="meta-value">${shiftText || '-'}</span></div>
+    `;
 
     const reason = document.createElement('div');
     reason.className = 'small muted';
@@ -435,6 +443,7 @@ async function loadMyRequests() {
     const noteText = notes.length ? ` (${notes.join(', ')})` : '';
     reason.textContent = `사유: ${r.reason || '-'}${noteText}`;
     container.appendChild(header);
+    container.appendChild(metaList);
     container.appendChild(reason);
 
     if (r.status === 'PENDING' || r.status === 'APPROVED') {
@@ -453,28 +462,30 @@ async function loadMyRequests() {
 
 async function loadPendingRequests() {
   const tbody = document.getElementById('pending-requests-body');
-  if (!tbody) return;
+  const cardList = document.getElementById('pending-requests-list');
+  if (!tbody && !cardList) return;
   const [data, users] = await Promise.all([
     apiRequest('/requests/pending'),
     apiRequest('/users')
   ]);
   await ensureShifts();
   const userMap = Object.fromEntries(users.map((u) => [u.id, u]));
-  tbody.innerHTML = '';
+  if (tbody) tbody.innerHTML = '';
+  if (cardList) cardList.innerHTML = '';
   data
     .filter((r) => r.status === 'PENDING')
     .forEach((r) => {
     const requester = userMap[r.user_id];
     const timeLabel = requestTimeLabel(r);
-    const tr = document.createElement('tr');
     const timeText = requestTimeLabel(r);
-    const shiftText = `${shiftLabel(r.target_shift_id)}${timeText ? ` (${timeText})` : ''}`;
+    const baseShiftLabel = r.target_shift_id ? shiftLabel(r.target_shift_id) : '근무 정보 없음';
+    const shiftText = `${baseShiftLabel}${timeText ? ` (${timeText})` : ''}`;
     const statusText = r.status === 'REJECTED' ? '거절/취소' : (statusLabel[r.status] || r.status);
-    tr.innerHTML = `<td>${requester ? requester.name : r.user_id}</td><td>${typeLabel(r.type)}</td><td>${r.target_date}</td><td>${shiftText}</td><td>${r.reason || ''}</td><td>${statusText}</td>`;
-    const tdAction = document.createElement('td');
+    const actions = document.createElement('div');
+    actions.className = 'request-card-actions';
     if (r.status === 'CANCELLED') {
-      tdAction.textContent = '승인된 후 취소됨';
-      tdAction.className = 'muted small';
+      actions.textContent = '승인된 후 취소됨';
+      actions.className = 'muted small';
     } else {
       const approve = document.createElement('button');
       approve.textContent = '승인';
@@ -484,9 +495,30 @@ async function loadPendingRequests() {
       reject.textContent = '거절';
       reject.className = 'btn muted tiny';
       reject.onclick = () => act(r.id, 'reject');
-      tdAction.appendChild(approve);
-      tdAction.appendChild(reject);
+      actions.appendChild(approve);
+      actions.appendChild(reject);
     }
+    if (cardList) {
+      const card = document.createElement('div');
+      card.className = 'request-card';
+      card.innerHTML = `
+        <div class="request-card-title">
+          <strong>${requester ? requester.name : r.user_id}</strong>
+          <span class="badge ${r.status.toLowerCase()}">${statusText}</span>
+        </div>
+        <div class="request-card-meta">유형: ${typeLabel(r.type)}</div>
+        <div class="request-card-meta">날짜: ${r.target_date}</div>
+        <div class="request-card-meta">근무: ${shiftText}</div>
+        <div class="request-card-meta">사유: ${r.reason || '-'}</div>
+      `;
+      card.appendChild(actions);
+      cardList.appendChild(card);
+      return;
+    }
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${requester ? requester.name : r.user_id}</td><td>${typeLabel(r.type)}</td><td>${r.target_date}</td><td>${shiftText}</td><td>${r.reason || ''}</td><td>${statusText}</td>`;
+    const tdAction = document.createElement('td');
+    tdAction.appendChild(actions);
     tr.appendChild(tdAction);
     tbody.appendChild(tr);
   });
@@ -501,23 +533,30 @@ async function act(id, action) {
 
 async function renderRequestFeed() {
   const tbody = document.getElementById('request-feed-body');
-  if (!tbody) return;
+  const list = document.getElementById('request-feed-list');
+  if (!tbody && !list) return;
   const [feed, users] = await Promise.all([
     apiRequest('/requests/feed'),
     apiRequest('/users')
   ]);
   await ensureShifts();
   const userMap = Object.fromEntries(users.map((u) => [u.id, u]));
-  tbody.innerHTML = '';
+  if (tbody) tbody.innerHTML = '';
+  if (list) list.innerHTML = '';
   const events = [];
   feed.forEach((r) => {
     const requester = userMap[r.user_id];
     const requesterName = requester ? requester.name : r.user_id;
-    const shiftText = `${shiftLabel(r.target_shift_id)}${requestTimeLabel(r) ? ` (${requestTimeLabel(r)})` : ''}`;
-    const base = { requesterName, shiftText, target: r.target_date, reason: r.reason || '' };
+    const baseShiftLabel = r.target_shift_id ? shiftLabel(r.target_shift_id) : '근무 정보 없음';
+    const shiftText = `${baseShiftLabel}${requestTimeLabel(r) ? ` (${requestTimeLabel(r)})` : ''}`;
+    const base = { requesterName, shiftText, target: r.target_date || '-', reason: r.reason || '-' };
     events.push({
       time: r.created_at,
       status: '신청',
+      requesterName: base.requesterName,
+      shiftText: base.shiftText,
+      target: base.target,
+      reason: base.reason,
       rowHtml: `<td>${requesterName}</td><td>${typeLabel(r.type)}</td><td>${r.target_date}</td><td>${shiftText}</td><td>신청됨</td><td>${base.reason}</td>`
     });
     if (r.status === 'APPROVED' || r.status === 'REJECTED' || r.status === 'CANCELLED') {
@@ -526,6 +565,10 @@ async function renderRequestFeed() {
       events.push({
         time: decidedAt,
         status: statusText,
+        requesterName: base.requesterName,
+        shiftText: base.shiftText,
+        target: base.target,
+        reason: base.reason,
         rowHtml: `<td>${requesterName}</td><td>${typeLabel(r.type)}</td><td>${r.target_date}</td><td>${shiftText}</td><td>${statusText}</td><td>${base.reason}</td>`
       });
     }
@@ -534,6 +577,21 @@ async function renderRequestFeed() {
     .sort((a, b) => Date.parse(b.time) - Date.parse(a.time))
     .slice(0, 50)
     .forEach((ev) => {
+      if (list) {
+        const card = document.createElement('div');
+        card.className = 'request-card';
+        card.innerHTML = `
+          <div class="request-card-title">
+            <strong>${ev.status}</strong>
+            <span class="muted small">${new Date(ev.time).toLocaleString()}</span>
+          </div>
+          <div class="request-card-meta">${ev.requesterName} · ${ev.shiftText}</div>
+          <div class="request-card-meta">날짜: ${ev.target || '-'}</div>
+          <div class="request-card-meta">사유: ${ev.reason || '-'}</div>
+        `;
+        list.appendChild(card);
+        return;
+      }
       const row = document.createElement('tr');
       row.innerHTML = ev.rowHtml;
       const timeCell = document.createElement('td');
@@ -598,4 +656,33 @@ async function initRequestPage(current) {
   if (form) form.addEventListener('submit', submitRequest);
 }
 
-export { submitRequest, loadMyRequests, loadPendingRequests, renderRequestFeed, initRequestPage, setShiftCache, requestTimeLabel };
+async function initRequestForm(current) {
+  currentUser = current;
+  await ensureShifts();
+  initSlotSelection();
+  await refreshAssignedSlots();
+  if (currentUser && currentUser.role !== 'MEMBER') {
+    await loadRequestUsers(currentUser);
+  }
+  bindFormEvents();
+  const form = document.getElementById('request-form');
+  if (form) form.addEventListener('submit', submitRequest);
+}
+
+async function initRequestStatus(current) {
+  currentUser = current;
+  await ensureShifts();
+  await loadMyRequests();
+}
+
+export {
+  submitRequest,
+  loadMyRequests,
+  loadPendingRequests,
+  renderRequestFeed,
+  initRequestPage,
+  initRequestForm,
+  initRequestStatus,
+  setShiftCache,
+  requestTimeLabel
+};

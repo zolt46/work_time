@@ -1,46 +1,58 @@
-<!-- File: /ui/html/dashboard.html -->
+<!-- File: /ui/mobile/dashboard.html -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>대시보드 - 다산 근무 관리자</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>대시보드 - 모바일</title>
   <link rel="stylesheet" href="../css/base.css" />
   <link rel="stylesheet" href="../css/layout.css" />
   <link rel="stylesheet" href="../css/components.css" />
+  <link rel="stylesheet" href="../css/mobile.css" />
   <script type="module">
-    import { redirectToMobileIfNeeded } from '../js/mobile.js';
-    redirectToMobileIfNeeded('../mobile/dashboard.html');
+    import { redirectToDesktopIfNeeded } from '../js/mobile.js';
+    redirectToDesktopIfNeeded('../html/dashboard.html');
   </script>
 </head>
-<body class="app-loading">
+<body class="mobile-app app-loading">
   <div id="app-shell-loader" class="app-shell-loader">
     <div class="spinner" aria-label="로딩 중"></div>
     <div class="muted">필요한 정보를 불러오는 중...</div>
   </div>
-  <header class="header">
-    <div class="header-left">
-      <button class="icon-btn" id="sidebar-toggle" aria-label="메뉴 열기">☰</button>
-      <div class="logo"><img src="../assets/logo.png" width="32" alt="logo" /> 대시보드</div>
-    </div>
-    <div class="header-right">
-      <div class="system-status-badge inline" id="status-card">
-        <div class="status-label">연결 상태</div>
-        <div class="system-status">
-          <span id="server-status" class="status-chip status-pending" title="서버 상태 확인 중">
-            <span class="status-dot"></span>
-            <span class="status-text">서버 확인 중</span>
-          </span>
-          <span id="db-status" class="status-chip status-pending" title="DB 상태 확인 중">
-            <span class="status-dot"></span>
-            <span class="status-text">DB 확인 중</span>
-          </span>
-        </div>
-        <div class="status-meta" id="status-meta">상태 체크 중...</div>
+  <header class="mobile-header">
+    <div class="mobile-top">
+      <div class="mobile-top-left">
+        <button class="icon-btn" id="sidebar-toggle" aria-label="메뉴 열기">☰</button>
       </div>
-      <span id="session-countdown" class="status-chip session-timer"></span>
-      <button class="btn tiny secondary" id="extend-session" style="display:none;">세션 연장</button>
-      <div class="muted">안녕하세요, <span id="user-name"></span> (<span id="user-role"></span>)</div>
-      <button class="btn muted" id="logout-btn">로그아웃</button>
+      <div class="mobile-top-center">
+        <div class="mobile-brand"><img src="../assets/logo.png" alt="logo" />대시보드</div>
+      </div>
+      <div class="mobile-top-right mobile-actions">
+        <button class="btn tiny muted" id="logout-btn">로그아웃</button>
+      </div>
+    </div>
+    <div class="mobile-status-row">
+      <div class="mobile-status-line">
+        <div class="system-status-badge">
+          <div class="status-label">연결 상태</div>
+          <div class="system-status">
+            <span id="server-status" class="status-chip status-pending" title="서버 상태 확인 중">
+              <span class="status-dot"></span>
+              <span class="status-text">서버 확인 중</span>
+            </span>
+            <span id="db-status" class="status-chip status-pending" title="DB 상태 확인 중">
+              <span class="status-dot"></span>
+              <span class="status-text">DB 확인 중</span>
+            </span>
+          </div>
+          <div class="status-meta" id="status-meta">상태 체크 중...</div>
+        </div>
+        <span id="session-countdown" class="status-chip session-timer"></span>
+      </div>
+      <div class="mobile-session">
+        <button class="btn tiny secondary" id="extend-session" style="display:none;">세션 연장</button>
+        <span class="mobile-user">안녕하세요, <span id="user-name"></span> (<span id="user-role"></span>)</span>
+      </div>
     </div>
   </header>
   <div class="page">
@@ -48,9 +60,39 @@
       <div class="sidebar-title">탐색</div>
       <a class="nav-link" data-page="dashboard" href="dashboard.html">대시보드</a>
       <a class="nav-link" data-page="overview" href="schedule_overview.html">근무 배정표</a>
-      <a class="nav-link" data-page="profile" href="member_profile.html">내 프로필</a>
-      <a class="nav-link" data-page="requests" data-roles="MASTER,MEMBER" href="request_center.html">근무 변경 신청</a>
-      <a class="nav-link" data-page="approvals" data-roles="MASTER,OPERATOR" href="request_approvals.html">변경 승인함</a>
+      <div class="nav-group">
+        <button class="nav-toggle" type="button" data-group="profile" data-page="profile" aria-expanded="false">
+          <span>내 프로필</span>
+          <span class="nav-plus">+</span>
+        </button>
+        <div class="nav-sub" data-group="profile">
+          <a class="nav-link" data-page="profile-info" href="member_profile.html">프로필 정보</a>
+          <a class="nav-link" data-page="profile-assignments" href="profile_assignments.html" data-roles="MASTER,MEMBER">내 배정 근무</a>
+          <a class="nav-link" data-page="profile-visible" href="profile_visible_users.html" data-roles="MASTER,OPERATOR">접근 가능한 계정 현황</a>
+          <a class="nav-link" data-page="profile-account" href="profile_account.html">로그인 ID/비밀번호 변경</a>
+          <a class="nav-link" data-page="profile-reset" href="profile_reset.html" data-roles="MASTER,OPERATOR">데이터 초기화</a>
+        </div>
+      </div>
+      <div class="nav-group">
+        <button class="nav-toggle" type="button" data-group="requests" data-page="requests" data-roles="MASTER,MEMBER" aria-expanded="false">
+          <span>근무 변경 신청</span>
+          <span class="nav-plus">+</span>
+        </button>
+        <div class="nav-sub" data-group="requests">
+          <a class="nav-link" data-page="request-form" data-roles="MASTER,MEMBER" href="request_center.html">결근/추가 근무 신청</a>
+          <a class="nav-link" data-page="request-status" data-roles="MASTER,MEMBER" href="request_status.html">내 신청 현황</a>
+        </div>
+      </div>
+      <div class="nav-group">
+        <button class="nav-toggle" type="button" data-group="approvals" data-page="approvals" data-roles="MASTER,OPERATOR" aria-expanded="false">
+          <span>변경 승인함</span>
+          <span class="nav-plus">+</span>
+        </button>
+        <div class="nav-sub" data-group="approvals">
+          <a class="nav-link" data-page="approvals-pending" data-roles="MASTER,OPERATOR" href="request_approvals.html">대기 중인 근무 변경 요청</a>
+          <a class="nav-link" data-page="approvals-recent" data-roles="MASTER,OPERATOR" href="approvals_recent.html">최근 요청 흐름</a>
+        </div>
+      </div>
       <a class="nav-link" data-page="notices" href="notice_board.html">공지사항</a>
       <a class="nav-link" data-page="notice_admin" data-min-role="OPERATOR" href="notice_admin.html">공지 관리</a>
       <a class="nav-link" data-page="members" data-min-role="OPERATOR" href="admin_members.html">구성원 관리</a>
@@ -58,24 +100,22 @@
       <a class="nav-link" data-page="history" data-min-role="MASTER" href="history.html">변동 이력</a>
     </nav>
     <div class="sidebar-overlay" id="sidebar-overlay"></div>
-    <main class="content">
-      <div class="grid two">
-        <div class="card" id="card-today">
-          <div class="card-title">오늘 일정</div>
-          <div id="today-info" class="muted">불러오는 중...</div>
+    <main class="mobile-content">
+      <section class="card" id="card-today">
+        <div class="card-title">오늘 일정</div>
+        <div id="today-info" class="muted">불러오는 중...</div>
+      </section>
+      <section class="card" id="card-pending">
+        <div class="card-title">대기 중인 요청</div>
+        <div id="pending-summary" class="stack tight">
+          <div id="pending-count" class="muted">불러오는 중...</div>
+          <ul id="pending-insights" class="compact-list"></ul>
         </div>
-        <div class="card" id="card-pending">
-          <div class="card-title">대기 중인 요청</div>
-          <div id="pending-summary" class="stack tight">
-            <div id="pending-count" class="muted">불러오는 중...</div>
-            <ul id="pending-insights" class="compact-list"></ul>
-          </div>
-        </div>
-      </div>
-        <div class="card timetable-card" id="card-weekly">
+      </section>
+      <section class="card timetable-card" id="card-weekly">
         <div class="card-title">주간 근무 배정표</div>
         <div id="schedule-summary" class="loader">일정을 불러오는 중...</div>
-      </div>
+      </section>
     </main>
   </div>
   <script type="module">
@@ -137,7 +177,7 @@
       document.getElementById('today-info').textContent = '운영자 모드에서는 오늘 일정이 숨겨집니다.';
     }
 
-    function renderPendingInsights(items, viewer) {
+    function renderPendingInsights(items) {
       if (!pendingInsights) return;
       pendingInsights.innerHTML = '';
       if (!items.length) {
@@ -188,7 +228,7 @@
     } catch (e) {
       document.getElementById('schedule-summary').textContent = '일정을 가져올 수 없습니다';
     }
-    renderCompactSchedule(assignments, 'schedule-summary', { hourHeight: 70 });
+    renderCompactSchedule(assignments, 'schedule-summary', { hourHeight: 60 });
   </script>
 </body>
 </html>

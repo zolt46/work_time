@@ -21,13 +21,26 @@ if (!globalThis.__worktimeLayout) {
       overlay.classList.remove('show');
       if (page) page.classList.add('sidebar-closed');
       toggle.classList.remove('active');
+      document.body.classList.remove('sidebar-open');
     };
+    document.querySelectorAll('.nav-toggle').forEach((button) => {
+      button.addEventListener('click', () => {
+        const group = button.dataset.group;
+        const panel = document.querySelector(`.nav-sub[data-group="${group}"]`);
+        if (!panel) return;
+        const willOpen = !panel.classList.contains('open');
+        panel.classList.toggle('open', willOpen);
+        button.classList.toggle('open', willOpen);
+        button.setAttribute('aria-expanded', String(willOpen));
+      });
+    });
     toggle.addEventListener('click', () => {
       const willOpen = !sidebar.classList.contains('open');
       sidebar.classList.toggle('open', willOpen);
       overlay.classList.toggle('show', willOpen);
       if (page) page.classList.toggle('sidebar-closed', !willOpen);
       toggle.classList.toggle('active', willOpen);
+      document.body.classList.toggle('sidebar-open', willOpen);
     });
     overlay.addEventListener('click', close);
   }
@@ -35,6 +48,21 @@ if (!globalThis.__worktimeLayout) {
   function highlightNav(activePage) {
     document.querySelectorAll('.nav-link').forEach((link) => {
       if (link.dataset.page === activePage) link.classList.add('active');
+    });
+    document.querySelectorAll('.nav-toggle').forEach((toggle) => {
+      if (toggle.dataset.page === activePage) toggle.classList.add('active');
+    });
+    document.querySelectorAll('.nav-sub').forEach((sub) => {
+      const activeLink = sub.querySelector('.nav-link.active');
+      if (activeLink) {
+        sub.classList.add('open');
+        const group = sub.dataset.group;
+        const toggle = document.querySelector(`.nav-toggle[data-group="${group}"]`);
+        if (toggle) {
+          toggle.classList.add('open');
+          toggle.setAttribute('aria-expanded', 'true');
+        }
+      }
     });
   }
 
@@ -51,7 +79,7 @@ if (!globalThis.__worktimeLayout) {
   }
 
   function applyNavVisibility(role) {
-    document.querySelectorAll('.nav-link').forEach((link) => {
+    document.querySelectorAll('.nav-link, .nav-toggle').forEach((link) => {
       link.style.display = isLinkAllowed(link, role) ? '' : 'none';
     });
   }
@@ -114,7 +142,7 @@ if (!globalThis.__worktimeLayout) {
   function wireCommonActions() {
     const logoutBtn = document.getElementById('logout-btn');
     if (logoutBtn) logoutBtn.onclick = () => logout(true);
-    const home = document.querySelector('.logo');
+    const home = document.querySelector('.logo, .mobile-brand');
     if (home) {
       home.style.cursor = 'pointer';
       home.addEventListener('click', () => { window.location.href = 'dashboard.html'; });
@@ -136,9 +164,14 @@ if (!globalThis.__worktimeLayout) {
           window.location.href = 'dashboard.html';
           return user;
         }
+      } else {
+        logout(true);
+        return null;
       }
     } catch (e) {
       console.error('사용자 정보를 불러오지 못했습니다.', e);
+      logout(true);
+      return null;
     }
     startSessionCountdown(
       document.getElementById('session-countdown'),
@@ -187,24 +220,55 @@ if (!globalThis.__worktimeLayout) {
   async function initLoginShell() {
     setupSidebar();
     const loginProgress = document.getElementById('login-progress');
-    checkSystemStatus(
-      document.getElementById('server-status'),
-      document.getElementById('db-status'),
-      document.getElementById('status-meta'),
-      {
-        autoRetry: true,
-        maxRetries: Infinity,
-        retryDelay: 900,
-        timeoutMs: 3500,
-        onRecover: () => window.location.reload(),
-        onRetry: (nextAttempt, maxRetries) => {
-          if (loginProgress) {
-            const attemptLabel = Number.isFinite(maxRetries) ? `${nextAttempt}/${maxRetries}회` : `${nextAttempt}회째`;
-            loginProgress.textContent = `서버 준비 중... 자동 재시도 (${attemptLabel})`;
+    const retryBtn = document.getElementById('login-retry');
+    let lastCheck = 0;
+    let cooldownTimer = null;
+    const cooldownMs = 5000;
+    const runStatusCheck = () => {
+      const now = Date.now();
+      if (now - lastCheck < cooldownMs) {
+        if (loginProgress) loginProgress.textContent = '잠시 후 다시 시도하세요.';
+        return;
+      }
+      lastCheck = now;
+      if (loginProgress) loginProgress.textContent = '서버 상태를 다시 확인하는 중...';
+      if (retryBtn) {
+        retryBtn.disabled = true;
+        retryBtn.textContent = '확인 중...';
+      }
+      if (cooldownTimer) clearTimeout(cooldownTimer);
+      cooldownTimer = setTimeout(() => {
+        if (retryBtn) {
+          retryBtn.disabled = false;
+          retryBtn.textContent = '연결 다시 확인';
+        }
+      }, cooldownMs);
+      checkSystemStatus(
+        document.getElementById('server-status'),
+        document.getElementById('db-status'),
+        document.getElementById('status-meta'),
+        {
+          autoRetry: true,
+          maxRetries: Infinity,
+          retryDelay: 900,
+          timeoutMs: 3500,
+          onRecover: () => window.location.reload(),
+          onRetry: (nextAttempt, maxRetries) => {
+            if (loginProgress) {
+              const attemptLabel = Number.isFinite(maxRetries) ? `${nextAttempt}/${maxRetries}회` : `${nextAttempt}회째`;
+              loginProgress.textContent = `서버 준비 중... 자동 재시도 (${attemptLabel})`;
+            }
           }
         }
-      }
-    );
+      );
+    };
+    runStatusCheck();
+    if (retryBtn) {
+      retryBtn.addEventListener('click', () => runStatusCheck());
+    }
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') runStatusCheck();
+    });
     if (loginProgress) loginProgress.textContent = '로그인 정보를 입력하세요';
   }
 

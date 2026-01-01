@@ -174,10 +174,23 @@ if (!globalThis.__worktimeLayout) {
     const logoutBtn = document.getElementById('logout-btn');
     if (logoutBtn) logoutBtn.onclick = () => logout(true);
     const home = document.querySelector('.logo, .mobile-brand');
+    const homeTarget = document.body?.dataset?.home || 'dashboard.html';
     if (home) {
       home.style.cursor = 'pointer';
-      home.addEventListener('click', () => { window.location.href = 'dashboard.html'; });
+      home.addEventListener('click', () => { window.location.href = homeTarget; });
     }
+    document.querySelectorAll('[data-return-target]').forEach((link) => {
+      link.addEventListener('click', (event) => {
+        event.preventDefault();
+        const target = link.getAttribute('data-return-target') || 'dashboard.html';
+        if (window.opener && !window.opener.closed) {
+          window.opener.location.href = target;
+          window.close();
+          return;
+        }
+        window.location.href = target;
+      });
+    });
   }
 
   async function initAppLayout(activePage) {

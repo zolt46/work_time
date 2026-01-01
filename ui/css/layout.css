@@ -89,6 +89,11 @@ body.app-loading .page {
 }
 .sidebar a:hover { background: rgba(255,255,255,0.08); }
 .sidebar a.active { background: rgba(56, 178, 172, 0.2); color: #e6fffa; }
+.nav-divider {
+  height: 1px;
+  background: rgba(148, 163, 184, 0.4);
+  margin: 12px 0;
+}
 .sidebar-overlay {
   position: fixed;
   inset: var(--header-height) 0 0 0;
@@ -166,6 +171,10 @@ body.app-loading .page {
 
 :root[data-theme="dark"] .schedule-grid .header {
   background: #111827;
+}
+
+:root[data-theme="dark"] .nav-divider {
+  background: rgba(148, 163, 184, 0.2);
 }
 
 :root[data-theme="dark"] .login-shell {

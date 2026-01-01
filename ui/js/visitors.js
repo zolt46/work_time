@@ -13,6 +13,7 @@ let entries = [];
 let periods = [];
 let selectedEntryId = null;
 let calendarCursor = null;
+const ACADEMIC_KEY = 'worktime-academic-settings';
 
 function formatNumber(value) {
   if (value === null || value === undefined) return '-';
@@ -41,6 +42,57 @@ function formatDateTime(dateStr) {
     return dateStr;
   }
 }
+
+function getAcademicSettings() {
+  const fallback = { month: 3, day: 1 };
+  try {
+    const stored = JSON.parse(localStorage.getItem(ACADEMIC_KEY) || '');
+    if (!stored) return fallback;
+    const month = Number(stored.month);
+    const day = Number(stored.day);
+    if (!month || !day) return fallback;
+    return { month, day };
+  } catch {
+    return fallback;
+  }
+}
+
+function saveAcademicSettings(settings) {
+  localStorage.setItem(ACADEMIC_KEY, JSON.stringify(settings));
+}
+
+function parseAcademicYear(year) {
+  if (!year) return null;
+  if (year.academic_year) return Number(year.academic_year);
+  if (year.label) {
+    const match = year.label.match(/(\d{4})/);
+    if (match) return Number(match[1]);
+  }
+  if (year.start_date) return new Date(year.start_date).getFullYear();
+  return null;
+}
+
+function getAcademicRange(academicYear, settings) {
+  if (!academicYear) return null;
+  const start = new Date(academicYear, settings.month - 1, settings.day);
+  const end = new Date(academicYear + 1, settings.month - 1, settings.day);
+  end.setDate(end.getDate() - 1);
+  return { start, end };
+}
+
+function applyAcademicSettings() {
+  const settings = getAcademicSettings();
+  const monthSelect = getElement('academic-start-month');
+  const dayInput = getElement('academic-start-day');
+  if (monthSelect) monthSelect.value = String(settings.month);
+  if (dayInput) dayInput.value = String(settings.day);
+}
+
+function getAcademicYearDisplay() {
+  const academicYear = currentYear?.academicYear ?? parseAcademicYear(currentYear);
+  return academicYear ? `${academicYear}학년도` : currentYear?.label || '-';
+}
+
 function getElement(id) {
   return document.getElementById(id);
 }
@@ -53,6 +105,10 @@ function resetEntryForm() {
   const count2 = getElement('count2');
   if (count1) count1.value = '0';
   if (count2) count2.value = '0';
+  const baseline = getElement('baseline-total');
+  if (baseline) baseline.value = '';
+  const dailyInput = getElement('daily-visitors');
+  if (dailyInput) dailyInput.value = '';
   const deleteBtn = getElement('delete-entry');
   if (deleteBtn) deleteBtn.style.display = 'none';
   updateEntryPreview();
@@ -62,18 +118,23 @@ function updateYearSummary() {
   const label = getElement('year-label');
   const range = getElement('year-range');
   const initial = getElement('year-initial-total');
-  const initialInput = getElement('edit-initial-total');
   if (!currentYear) {
     if (label) label.textContent = '-';
     if (range) range.textContent = '-';
     if (initial) initial.textContent = '-';
-    if (initialInput) initialInput.value = '';
     return;
   }
-  if (label) label.textContent = currentYear.label;
-  if (range) range.textContent = formatDateRange(currentYear.start_date, currentYear.end_date);
+  if (label) label.textContent = getAcademicYearDisplay();
+  const settings = getAcademicSettings();
+  const academicRange = getAcademicRange(currentYear.academicYear, settings);
+  if (range) {
+    if (academicRange) {
+      range.textContent = formatDateRange(academicRange.start.toISOString(), academicRange.end.toISOString());
+    } else {
+      range.textContent = formatDateRange(currentYear.start_date, currentYear.end_date);
+    }
+  }
   if (initial) initial.textContent = formatNumber(currentYear.initial_total);
-  if (initialInput) initialInput.value = String(currentYear.initial_total ?? 0);
 }
 
 function renderEntries() {
@@ -155,8 +216,10 @@ function resolveCalendarCursor() {
   if (calendarCursor) return calendarCursor;
   const today = new Date();
   if (currentYear) {
-    const start = new Date(currentYear.start_date);
-    const end = new Date(currentYear.end_date);
+    const settings = getAcademicSettings();
+    const academicRange = getAcademicRange(currentYear.academicYear, settings);
+    const start = academicRange?.start || new Date(currentYear.start_date);
+    const end = academicRange?.end || new Date(currentYear.end_date);
     if (today >= start && today <= end) {
       calendarCursor = new Date(today.getFullYear(), today.getMonth(), 1);
       return calendarCursor;
@@ -217,14 +280,16 @@ function renderCalendar() {
     const cell = document.createElement('div');
     const dateStr = new Date(year, month, day).toISOString().slice(0, 10);
     const entry = entriesMap.get(dateStr);
+    const author = entry?.updated_by_name || entry?.created_by_name || '-';
     cell.className = 'calendar-cell';
     cell.innerHTML = `
       <div class="calendar-date">${day}</div>
       <div class="calendar-value">${entry ? formatNumber(entry.daily_visitors) : '-'}</div>
+      <div class="calendar-author">${entry ? author : ''}</div>
     `;
     if (entry) {
       cell.classList.add('has-entry');
-      cell.title = `${formatDate(dateStr)}: ${formatNumber(entry.daily_visitors)}명`;
+      cell.title = `${formatDate(dateStr)}: ${formatNumber(entry.daily_visitors)}명 (${author})`;
       cell.addEventListener('click', () => selectEntry(entry));
     }
     grid.appendChild(cell);
@@ -235,8 +300,10 @@ function moveCalendar(monthOffset) {
   const cursor = resolveCalendarCursor();
   const next = new Date(cursor.getFullYear(), cursor.getMonth() + monthOffset, 1);
   if (currentYear) {
-    const start = new Date(currentYear.start_date);
-    const end = new Date(currentYear.end_date);
+    const settings = getAcademicSettings();
+    const academicRange = getAcademicRange(currentYear.academicYear, settings);
+    const start = academicRange?.start || new Date(currentYear.start_date);
+    const end = academicRange?.end || new Date(currentYear.end_date);
     const startMonth = new Date(start.getFullYear(), start.getMonth(), 1);
     const endMonth = new Date(end.getFullYear(), end.getMonth(), 1);
     if (next < startMonth) {
@@ -277,6 +344,10 @@ function selectEntry(entry) {
   if (visitDate) visitDate.value = entry.visit_date;
   if (count1) count1.value = entry.count1;
   if (count2) count2.value = entry.count2;
+  const baseline = getElement('baseline-total');
+  const dailyInput = getElement('daily-visitors');
+  if (baseline) baseline.value = '';
+  if (dailyInput) dailyInput.value = entry.daily_visitors ?? '';
   const deleteBtn = getElement('delete-entry');
   if (deleteBtn) deleteBtn.style.display = '';
   updateEntryPreview(entry);
@@ -284,29 +355,72 @@ function selectEntry(entry) {
 }
 
 function findPreviousTotalForDate(visitDate) {
-  if (!currentYear) return 0;
+  if (!currentYear) return { value: 0, hasPrior: false };
   const dateValue = new Date(visitDate);
   const list = [...entries].sort((a, b) => new Date(a.visit_date) - new Date(b.visit_date));
   let prev = currentYear.initial_total || 0;
+  let hasPrior = false;
   for (const entry of list) {
     if (new Date(entry.visit_date) >= dateValue) break;
     prev = entry.total_count;
+    hasPrior = true;
   }
-  return prev;
+  return { value: prev, hasPrior };
+}
+
+function findNextTotalForDate(visitDate) {
+  const dateValue = new Date(visitDate);
+  const list = [...entries].sort((a, b) => new Date(a.visit_date) - new Date(b.visit_date));
+  const nextEntry = list.find((entry) => new Date(entry.visit_date) > dateValue);
+  if (!nextEntry) return null;
+  const nextDate = new Date(nextEntry.visit_date);
+  const diffDays = Math.round((nextDate - dateValue) / (1000 * 60 * 60 * 24));
+  if (diffDays !== 1) return null;
+  if (nextEntry.previous_total !== undefined && nextEntry.previous_total !== null) {
+    return nextEntry.previous_total;
+  }
+  if (nextEntry.total_count !== undefined && nextEntry.daily_visitors !== undefined) {
+    return nextEntry.total_count - nextEntry.daily_visitors;
+  }
+  return null;
 }
 
 function updateEntryPreview(entry) {
   const count1 = parseInt(getElement('count1')?.value || '0', 10);
   const count2 = parseInt(getElement('count2')?.value || '0', 10);
-  const total = count1 + count2;
+  const baselineRaw = getElement('baseline-total')?.value;
+  const baselineTotal = baselineRaw === '' || baselineRaw === undefined ? null : parseInt(baselineRaw, 10);
+  const dailyRaw = getElement('daily-visitors')?.value;
+  const dailyInput = dailyRaw === '' || dailyRaw === undefined ? null : parseInt(dailyRaw, 10);
+  let total = count1 + count2;
   let prevTotal = currentYear?.initial_total || 0;
   const visitDate = getElement('visit-date')?.value;
+  let hasPrev = false;
   if (entry?.previous_total !== undefined) {
     prevTotal = entry.previous_total;
+    hasPrev = true;
+  } else if (baselineTotal !== null && !Number.isNaN(baselineTotal)) {
+    prevTotal = baselineTotal;
+    hasPrev = true;
   } else if (visitDate) {
-    prevTotal = findPreviousTotalForDate(visitDate);
+    const prevInfo = findPreviousTotalForDate(visitDate);
+    prevTotal = prevInfo.value;
+    hasPrev = prevInfo.hasPrior;
   }
-  const daily = total - prevTotal;
+  if (dailyInput !== null && !Number.isNaN(dailyInput) && total === 0) {
+    if (!hasPrev && visitDate) {
+      const nextTotal = findNextTotalForDate(visitDate);
+      if (nextTotal !== null) {
+        total = nextTotal;
+        prevTotal = nextTotal - dailyInput;
+      } else {
+        total = prevTotal + dailyInput;
+      }
+    } else {
+      total = prevTotal + dailyInput;
+    }
+  }
+  const daily = dailyInput !== null && !Number.isNaN(dailyInput) ? dailyInput : total - prevTotal;
   const prevEl = getElement('preview-prev-total');
   const totalEl = getElement('preview-total');
   const dailyEl = getElement('preview-daily');
@@ -321,6 +435,7 @@ async function loadYearDetail(yearId) {
   if (!yearId) return;
   const data = await apiRequest(`/visitors/years/${yearId}`);
   currentYear = data.year;
+  currentYear.academicYear = parseAcademicYear(currentYear);
   entries = data.entries || [];
   periods = data.periods || [];
   calendarCursor = null;
@@ -367,33 +482,6 @@ function bindEvents() {
     await loadYearDetail(value);
   });
 
-  getElement('create-year')?.addEventListener('click', async () => {
-    const yearInput = parseInt(getElement('new-year-input')?.value || '0', 10);
-    if (!yearInput) {
-      alert('학년도 숫자를 입력하세요.');
-      return;
-    }
-    const initialTotal = parseInt(getElement('new-initial-total')?.value || '0', 10) || 0;
-    await apiRequest('/visitors/years', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ academic_year: yearInput, initial_total: initialTotal })
-    });
-    getElement('new-year-input').value = '';
-    await loadYears();
-  });
-
-  getElement('update-initial-total')?.addEventListener('click', async () => {
-    if (!currentYear) return;
-    const value = parseInt(getElement('edit-initial-total')?.value || '0', 10) || 0;
-    await apiRequest(`/visitors/years/${currentYear.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ initial_total: value })
-    });
-    await loadYearDetail(currentYear.id);
-  });
-
   getElement('save-entry')?.addEventListener('click', async () => {
     if (!currentYear) return;
     const visitDate = getElement('visit-date')?.value;
@@ -401,8 +489,29 @@ function bindEvents() {
       alert('날짜를 선택하세요.');
       return;
     }
-    const count1 = parseInt(getElement('count1')?.value || '0', 10) || 0;
-    const count2 = parseInt(getElement('count2')?.value || '0', 10) || 0;
+    let count1 = parseInt(getElement('count1')?.value || '0', 10) || 0;
+    let count2 = parseInt(getElement('count2')?.value || '0', 10) || 0;
+    const baselineRaw = getElement('baseline-total')?.value;
+    const baselineTotal = baselineRaw === '' || baselineRaw === undefined ? null : parseInt(baselineRaw, 10);
+    const dailyRaw = getElement('daily-visitors')?.value;
+    const dailyInput = dailyRaw === '' || dailyRaw === undefined ? null : parseInt(dailyRaw, 10);
+    if (dailyInput !== null && !Number.isNaN(dailyInput) && count1 + count2 === 0) {
+      let prevTotal = baselineTotal !== null && !Number.isNaN(baselineTotal)
+        ? baselineTotal
+        : findPreviousTotalForDate(visitDate).value;
+      const nextTotal = baselineTotal === null ? findNextTotalForDate(visitDate) : null;
+      let computedTotal = prevTotal + dailyInput;
+      if (nextTotal !== null) {
+        computedTotal = nextTotal;
+        prevTotal = nextTotal - dailyInput;
+      }
+      count1 = computedTotal;
+      count2 = 0;
+      const count1El = getElement('count1');
+      const count2El = getElement('count2');
+      if (count1El) count1El.value = String(count1);
+      if (count2El) count2El.value = String(count2);
+    }
     await apiRequest(`/visitors/years/${currentYear.id}/entries`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -424,13 +533,23 @@ function bindEvents() {
     resetEntryForm();
   });
 
-  ['visit-date', 'count1', 'count2'].forEach((id) => {
+  ['visit-date', 'count1', 'count2', 'baseline-total', 'daily-visitors'].forEach((id) => {
     getElement(id)?.addEventListener('input', () => updateEntryPreview());
     getElement(id)?.addEventListener('change', () => updateEntryPreview());
   });
 
   getElement('calendar-prev')?.addEventListener('click', () => moveCalendar(-1));
   getElement('calendar-next')?.addEventListener('click', () => moveCalendar(1));
+
+  getElement('save-academic-settings')?.addEventListener('click', () => {
+    const month = parseInt(getElement('academic-start-month')?.value || '3', 10);
+    const day = parseInt(getElement('academic-start-day')?.value || '1', 10);
+    saveAcademicSettings({ month, day });
+    updateYearSummary();
+    calendarCursor = null;
+    renderCalendar();
+    alert('학년도 기준이 저장되었습니다.');
+  });
 
   getElement('save-periods')?.addEventListener('click', async () => {
     if (!currentYear) return;
@@ -470,6 +589,7 @@ function bindEvents() {
 }
 
 export function initVisitorStats() {
+  applyAcademicSettings();
   bindEvents();
   loadYears().catch((error) => {
     console.error(error);

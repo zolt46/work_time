@@ -182,6 +182,8 @@ CREATE TABLE IF NOT EXISTS visitor_daily_counts (
     visit_date DATE NOT NULL,
     count1 INTEGER NOT NULL DEFAULT 0,
     count2 INTEGER NOT NULL DEFAULT 0,
+    baseline_total INTEGER,
+    daily_override INTEGER,
     total_count INTEGER NOT NULL DEFAULT 0,
     previous_total INTEGER NOT NULL DEFAULT 0,
     daily_visitors INTEGER NOT NULL DEFAULT 0,

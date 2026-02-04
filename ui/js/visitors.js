@@ -105,6 +105,10 @@ function formatMonthLabel(dateObj) {
   return `${dateObj.getFullYear()}년 ${dateObj.getMonth() + 1}월`;
 }
 
+function hasBaselineInYear() {
+  return entries.some((entry) => entry.baseline_total !== null && entry.baseline_total !== undefined);
+}
+
 function updateYearSummary() {
   const label = getElement('year-label');
   const academic = getElement('year-academic');
@@ -657,6 +661,11 @@ function bindEvents() {
       showUserError('금일 출입자는 0 이상 1,000,000 이하만 입력할 수 있습니다.', 'bulk-entry-message');
       return;
     }
+    if (baselineTotal === null && !hasBaselineInYear()) {
+      showUserError('기준점이 되는 전일 합산값이 없습니다. 전일 합산 기준값을 먼저 입력하세요.', 'bulk-entry-message');
+      getElement('bulk-baseline-total')?.focus();
+      return;
+    }
     if (baselineTotal === null && dailyVisitors === null) {
       showUserError('전일 합산 기준값 또는 금일 출입자를 입력하세요.', 'bulk-entry-message');
       return;
@@ -688,6 +697,11 @@ function bindEvents() {
     const baselineTotal = parseNumberInput(getElement('bulk-baseline-total')?.value);
     if (baselineTotal !== null && (baselineTotal < 0 || baselineTotal > 100000000)) {
       showUserError('전일 합산 기준값은 0 이상 100,000,000 이하만 입력할 수 있습니다.', 'bulk-entry-message');
+      return;
+    }
+    if (baselineTotal === null && !hasBaselineInYear()) {
+      showUserError('기준점이 되는 전일 합산값이 없습니다. 전일 합산 기준값을 먼저 입력하세요.', 'bulk-entry-message');
+      getElement('bulk-baseline-total')?.focus();
       return;
     }
     const lines = raw.split('\n').map((line) => line.trim()).filter(Boolean);

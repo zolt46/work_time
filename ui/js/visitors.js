@@ -391,13 +391,6 @@ function buildEntriesMap() {
   return entriesByDate;
 }
 
-function getPreviousTotal(visitDate) {
-  if (!currentYear || !visitDate) return 0;
-  const { prev } = findEntryNeighbors(visitDate);
-  if (prev) return prev.total_count;
-  return currentYear.initial_total || 0;
-}
-
 function renderCalendar() {
   const grid = getElement('calendar-grid');
   const label = getElement('calendar-label');
@@ -908,14 +901,6 @@ function bindEvents() {
   getElement('load-prev-total')?.addEventListener('click', loadPreviousTotal);
 
   ['bulk-visit-date', 'bulk-daily-visitors'].forEach((id) => {
-    getElement(id)?.addEventListener('input', () => updateBulkEntryPreview());
-    getElement(id)?.addEventListener('change', () => updateBulkEntryPreview());
-  });
-
-  getElement('entry-month-prev')?.addEventListener('click', () => moveEntryMonth(-1));
-  getElement('entry-month-next')?.addEventListener('click', () => moveEntryMonth(1));
-
-  ['bulk-visit-date', 'bulk-baseline-total', 'bulk-daily-visitors'].forEach((id) => {
     getElement(id)?.addEventListener('input', () => updateBulkEntryPreview());
     getElement(id)?.addEventListener('change', () => updateBulkEntryPreview());
   });

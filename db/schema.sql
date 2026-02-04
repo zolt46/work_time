@@ -158,7 +158,6 @@ CREATE TABLE IF NOT EXISTS visitor_school_years (
     label TEXT NOT NULL,
     start_date DATE NOT NULL,
     end_date DATE NOT NULL,
-    initial_total INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -194,7 +193,7 @@ CREATE TABLE IF NOT EXISTS visitor_running_totals (
     school_year_id UUID PRIMARY KEY REFERENCES visitor_school_years(id) ON DELETE CASCADE,
     previous_total INTEGER,
     current_total INTEGER,
-    current_date DATE,
+    running_date DATE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

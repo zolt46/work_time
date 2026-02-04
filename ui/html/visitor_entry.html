@@ -53,8 +53,9 @@
       <div class="sidebar-title">출입자 통계</div>
       <a class="nav-link" data-page="visitor-dashboard" href="visitor_dashboard.html">월간 대시보드</a>
       <a class="nav-link" data-page="visitor-entry" href="visitor_entry.html">일일 입력</a>
+      <a class="nav-link" data-page="visitor-bulk-entry" data-min-role="OPERATOR" href="visitor_bulk_entry.html">일괄 입력</a>
       <a class="nav-link" data-page="visitor-summary" href="visitor_summary.html">통계 리포트</a>
-      <a class="nav-link" data-page="visitor-settings" href="visitor_settings.html">학년도 · 설정</a>
+      <a class="nav-link" data-page="visitor-settings" data-min-role="OPERATOR" href="visitor_settings.html">학년도 · 설정</a>
       <div class="nav-divider"></div>
       <a class="nav-link nav-secondary" href="dashboard.html" data-return-target="dashboard.html">근무 시스템 돌아가기</a>
     </nav>
@@ -86,11 +87,12 @@
 
       <section class="card" id="entry">
         <div class="card-title">일일 방문자 입력</div>
-        <div id="entry-hint" class="muted">기준 합산값이나 금일 출입자 입력으로 중간부터도 자연스럽게 집계할 수 있습니다.</div>
+        <div id="entry-hint" class="muted">전일 합산 불러오기 버튼으로 기준값을 가져온 뒤 수정하여 계산할 수 있습니다.</div>
+        <div id="entry-message" class="form-message" role="alert" aria-live="polite"></div>
         <div class="inline-form">
           <div class="form-row">
             <label for="visit-date">날짜</label>
-            <input id="visit-date" type="date" />
+            <input id="visit-date" type="date" disabled />
           </div>
           <div class="form-row">
             <label for="count1">Count 1</label>
@@ -101,12 +103,11 @@
             <input id="count2" type="number" min="0" value="0" />
           </div>
           <div class="form-row">
-            <label for="baseline-total">기준 합산값 (선택)</label>
-            <input id="baseline-total" type="number" min="0" placeholder="중간 시작 시 입력" />
-          </div>
-          <div class="form-row">
-            <label for="daily-visitors">금일 출입자 (역산)</label>
-            <input id="daily-visitors" type="number" min="0" placeholder="역으로 계산할 때 입력" />
+            <label for="prev-total">전일 합산</label>
+            <div class="inline-input">
+              <input id="prev-total" type="number" min="0" placeholder="전일 합산 입력" />
+              <button class="btn tiny secondary" id="load-prev-total" type="button">불러오기</button>
+            </div>
           </div>
           <button class="btn" id="save-entry">기록 저장</button>
           <button class="btn secondary" id="reset-entry">초기화</button>
@@ -134,15 +135,16 @@
 
       <section class="card">
         <div class="card-title">일일 기록</div>
+        <div class="entry-month-header">
+          <button class="btn tiny secondary" id="entry-month-prev">이전 달</button>
+          <div class="entry-month-label" id="entry-month-label">-</div>
+          <button class="btn tiny secondary" id="entry-month-next">다음 달</button>
+        </div>
         <div class="muted" id="entry-status">불러오는 중...</div>
         <table class="table" id="entry-table">
           <thead>
             <tr>
               <th>날짜</th>
-              <th>Count 1</th>
-              <th>Count 2</th>
-              <th>금일 합산</th>
-              <th>전일 합산</th>
               <th>금일 출입자</th>
               <th>수정자</th>
               <th>수정 시각</th>

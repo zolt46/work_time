@@ -583,12 +583,24 @@ function bindEvents() {
     }
     const count1 = parseNumberInput(getElement('count1')?.value);
     const count2 = parseNumberInput(getElement('count2')?.value);
+    if (count1 !== null && (count1 < 0 || count1 > 1000000)) {
+      showUserError('Count 1은 0 이상 1,000,000 이하만 입력할 수 있습니다.', 'entry-message');
+      return;
+    }
+    if (count2 !== null && (count2 < 0 || count2 > 1000000)) {
+      showUserError('Count 2는 0 이상 1,000,000 이하만 입력할 수 있습니다.', 'entry-message');
+      return;
+    }
     if (count1 === null && count2 === null) {
       showUserError('Count 1과 Count 2를 입력하세요.', 'entry-message');
       return;
     }
     if (count1 === null || count2 === null) {
       showUserError('Count 1과 Count 2를 모두 입력하세요.', 'entry-message');
+      return;
+    }
+    if (Math.abs(count1 - count2) >= 10000) {
+      showUserError('Count 1과 Count 2 차이가 너무 큽니다.', 'entry-message');
       return;
     }
     setFormMessage('entry-message', '');
@@ -637,6 +649,14 @@ function bindEvents() {
     }
     const baselineTotal = parseNumberInput(getElement('bulk-baseline-total')?.value);
     const dailyVisitors = parseNumberInput(getElement('bulk-daily-visitors')?.value);
+    if (baselineTotal !== null && (baselineTotal < 0 || baselineTotal > 100000000)) {
+      showUserError('전일 합산 기준값은 0 이상 100,000,000 이하만 입력할 수 있습니다.', 'bulk-entry-message');
+      return;
+    }
+    if (dailyVisitors !== null && (dailyVisitors < 0 || dailyVisitors > 1000000)) {
+      showUserError('금일 출입자는 0 이상 1,000,000 이하만 입력할 수 있습니다.', 'bulk-entry-message');
+      return;
+    }
     if (baselineTotal === null && dailyVisitors === null) {
       showUserError('전일 합산 기준값 또는 금일 출입자를 입력하세요.', 'bulk-entry-message');
       return;
@@ -666,6 +686,10 @@ function bindEvents() {
     if (!currentYear) return;
     const raw = getElement('bulk-entry-list')?.value || '';
     const baselineTotal = parseNumberInput(getElement('bulk-baseline-total')?.value);
+    if (baselineTotal !== null && (baselineTotal < 0 || baselineTotal > 100000000)) {
+      showUserError('전일 합산 기준값은 0 이상 100,000,000 이하만 입력할 수 있습니다.', 'bulk-entry-message');
+      return;
+    }
     const lines = raw.split('\n').map((line) => line.trim()).filter(Boolean);
     if (!lines.length) {
       showUserError('일괄 입력할 데이터를 입력하세요.', 'bulk-entry-message');
@@ -684,26 +708,30 @@ function bindEvents() {
         showUserError(`형식 오류: "${line}"`, 'bulk-entry-message');
         return;
       }
+      if (dailyVisitors < 0 || dailyVisitors > 1000000) {
+        showUserError('금일 출입자는 0 이상 1,000,000 이하만 입력할 수 있습니다.', 'bulk-entry-message');
+        return;
+      }
       parsed.push({ visitDate, dailyVisitors });
     }
     parsed.sort((a, b) => new Date(a.visitDate) - new Date(b.visitDate));
     pendingEntryMonth = new Date(parsed[0].visitDate);
     setFormMessage('bulk-entry-message', '');
     try {
-      for (let i = 0; i < parsed.length; i += 1) {
-        const item = parsed[i];
-        await apiRequest(`/visitors/years/${currentYear.id}/entries`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            visit_date: item.visitDate,
-            count1: null,
-            count2: null,
-            baseline_total: i === 0 ? baselineTotal : null,
-            daily_override: item.dailyVisitors
-          })
-        });
-      }
+      const payload = {
+        entries: parsed.map((item, index) => ({
+          visit_date: item.visitDate,
+          count1: null,
+          count2: null,
+          baseline_total: index === 0 ? baselineTotal : null,
+          daily_override: item.dailyVisitors
+        }))
+      };
+      await apiRequest(`/visitors/years/${currentYear.id}/entries/bulk`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
       await loadYearDetail(currentYear.id);
       getElement('bulk-entry-list').value = '';
       resetBulkEntryForm();

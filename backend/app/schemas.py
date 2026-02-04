@@ -379,10 +379,17 @@ class VisitorPeriodOut(BaseModel):
 
 class VisitorEntryCreate(BaseModel):
     visit_date: date
-    count1: int = 0
-    count2: int = 0
-    baseline_total: int | None = None
-    daily_override: int | None = None
+    daily_visitors: int
+    previous_total: int | None = None
+
+
+class VisitorBulkEntryItem(BaseModel):
+    visit_date: date
+    daily_visitors: int
+
+
+class VisitorBulkEntryRequest(BaseModel):
+    entries: list[VisitorBulkEntryItem]
 
 
 class VisitorEntryOut(BaseModel):
@@ -391,12 +398,6 @@ class VisitorEntryOut(BaseModel):
     id: UUID
     school_year_id: UUID
     visit_date: date
-    count1: int
-    count2: int
-    baseline_total: int | None = None
-    daily_override: int | None = None
-    total_count: int
-    previous_total: int
     daily_visitors: int
     created_by: UUID | None = None
     updated_by: UUID | None = None
@@ -404,6 +405,12 @@ class VisitorEntryOut(BaseModel):
     updated_by_name: str | None = None
     created_at: datetime
     updated_at: datetime
+
+
+class VisitorRunningTotalOut(BaseModel):
+    previous_total: int | None = None
+    current_total: int | None = None
+    current_date: date | None = None
 
 
 class VisitorMonthlyStat(BaseModel):

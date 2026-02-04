@@ -180,10 +180,6 @@ CREATE TABLE IF NOT EXISTS visitor_daily_counts (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     school_year_id UUID NOT NULL REFERENCES visitor_school_years(id) ON DELETE CASCADE,
     visit_date DATE NOT NULL,
-    count1 INTEGER NOT NULL DEFAULT 0,
-    count2 INTEGER NOT NULL DEFAULT 0,
-    total_count INTEGER NOT NULL DEFAULT 0,
-    previous_total INTEGER NOT NULL DEFAULT 0,
     daily_visitors INTEGER NOT NULL DEFAULT 0,
     created_by UUID REFERENCES users(id),
     updated_by UUID REFERENCES users(id),
@@ -193,6 +189,48 @@ CREATE TABLE IF NOT EXISTS visitor_daily_counts (
 );
 CREATE INDEX IF NOT EXISTS idx_visitor_daily_year ON visitor_daily_counts(school_year_id);
 CREATE INDEX IF NOT EXISTS idx_visitor_daily_date ON visitor_daily_counts(visit_date);
+
+CREATE TABLE IF NOT EXISTS visitor_running_totals (
+    school_year_id UUID PRIMARY KEY REFERENCES visitor_school_years(id) ON DELETE CASCADE,
+    previous_total INTEGER,
+    current_total INTEGER,
+    current_date DATE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS visitor_monthly_stats (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    school_year_id UUID NOT NULL REFERENCES visitor_school_years(id) ON DELETE CASCADE,
+    year INTEGER NOT NULL,
+    month INTEGER NOT NULL,
+    total_visitors INTEGER NOT NULL DEFAULT 0,
+    open_days INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (school_year_id, year, month)
+);
+CREATE INDEX IF NOT EXISTS idx_visitor_monthly_year ON visitor_monthly_stats(school_year_id);
+
+CREATE TABLE IF NOT EXISTS visitor_period_stats (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    school_year_id UUID NOT NULL REFERENCES visitor_school_years(id) ON DELETE CASCADE,
+    period_id UUID NOT NULL REFERENCES visitor_periods(id) ON DELETE CASCADE,
+    total_visitors INTEGER NOT NULL DEFAULT 0,
+    open_days INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (school_year_id, period_id)
+);
+CREATE INDEX IF NOT EXISTS idx_visitor_period_stats_year ON visitor_period_stats(school_year_id);
+
+CREATE TABLE IF NOT EXISTS visitor_year_stats (
+    school_year_id UUID PRIMARY KEY REFERENCES visitor_school_years(id) ON DELETE CASCADE,
+    total_visitors INTEGER NOT NULL DEFAULT 0,
+    open_days INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 
 CREATE OR REPLACE FUNCTION update_timestamp()
 RETURNS TRIGGER AS $$
@@ -232,4 +270,20 @@ FOR EACH ROW EXECUTE PROCEDURE update_timestamp();
 
 CREATE TRIGGER trg_visitor_daily_counts_updated
 BEFORE UPDATE ON visitor_daily_counts
+FOR EACH ROW EXECUTE PROCEDURE update_timestamp();
+
+CREATE TRIGGER trg_visitor_running_totals_updated
+BEFORE UPDATE ON visitor_running_totals
+FOR EACH ROW EXECUTE PROCEDURE update_timestamp();
+
+CREATE TRIGGER trg_visitor_monthly_stats_updated
+BEFORE UPDATE ON visitor_monthly_stats
+FOR EACH ROW EXECUTE PROCEDURE update_timestamp();
+
+CREATE TRIGGER trg_visitor_period_stats_updated
+BEFORE UPDATE ON visitor_period_stats
+FOR EACH ROW EXECUTE PROCEDURE update_timestamp();
+
+CREATE TRIGGER trg_visitor_year_stats_updated
+BEFORE UPDATE ON visitor_year_stats
 FOR EACH ROW EXECUTE PROCEDURE update_timestamp();

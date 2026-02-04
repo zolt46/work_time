@@ -246,6 +246,12 @@ function renderEntries() {
     const tr = document.createElement('tr');
     if (entry.id === selectedEntryId) tr.classList.add('selected');
     const updater = entry.updated_by_name || entry.created_by_name || '-';
+    const totalCount = entry.total_count === 0 && entry.daily_override !== null && entry.previous_total !== null
+      ? entry.previous_total + entry.daily_override
+      : entry.total_count;
+    const dailyVisitors = entry.daily_visitors === 0 && entry.daily_override !== null
+      ? entry.daily_override
+      : entry.daily_visitors;
     tr.innerHTML = `
       <td>${formatDate(entry.visit_date)}</td>
       <td>${formatNumber(entry.daily_visitors)}</td>
@@ -383,6 +389,13 @@ function moveEntryMonth(monthOffset) {
 
 function buildEntriesMap() {
   return entriesByDate;
+}
+
+function getPreviousTotal(visitDate) {
+  if (!currentYear || !visitDate) return 0;
+  const { prev } = findEntryNeighbors(visitDate);
+  if (prev) return prev.total_count;
+  return currentYear.initial_total || 0;
 }
 
 function renderCalendar() {
@@ -895,6 +908,14 @@ function bindEvents() {
   getElement('load-prev-total')?.addEventListener('click', loadPreviousTotal);
 
   ['bulk-visit-date', 'bulk-daily-visitors'].forEach((id) => {
+    getElement(id)?.addEventListener('input', () => updateBulkEntryPreview());
+    getElement(id)?.addEventListener('change', () => updateBulkEntryPreview());
+  });
+
+  getElement('entry-month-prev')?.addEventListener('click', () => moveEntryMonth(-1));
+  getElement('entry-month-next')?.addEventListener('click', () => moveEntryMonth(1));
+
+  ['bulk-visit-date', 'bulk-baseline-total', 'bulk-daily-visitors'].forEach((id) => {
     getElement(id)?.addEventListener('input', () => updateBulkEntryPreview());
     getElement(id)?.addEventListener('change', () => updateBulkEntryPreview());
   });

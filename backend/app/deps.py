@@ -62,6 +62,15 @@ def initialize_database() -> None:
                         ADD COLUMN IF NOT EXISTS target_end_time TIME,
                         ADD COLUMN IF NOT EXISTS cancelled_after_approval BOOLEAN NOT NULL DEFAULT FALSE,
                         ADD COLUMN IF NOT EXISTS cancel_reason TEXT;
+                    ALTER TABLE IF EXISTS visitor_daily_counts
+                        ADD COLUMN IF NOT EXISTS baseline_total INTEGER,
+                        ADD COLUMN IF NOT EXISTS daily_override INTEGER;
+                    ALTER TABLE IF EXISTS visitor_daily_counts
+                        ALTER COLUMN count1 DROP NOT NULL,
+                        ALTER COLUMN count2 DROP NOT NULL;
+                    ALTER TABLE IF EXISTS visitor_daily_counts
+                        ALTER COLUMN count1 DROP DEFAULT,
+                        ALTER COLUMN count2 DROP DEFAULT;
                 END$$;
                 """
             )

@@ -65,8 +65,9 @@
       <div class="sidebar-title">출입자 통계</div>
       <a class="nav-link" data-page="visitor-dashboard" href="visitor_dashboard.html">월간 대시보드</a>
       <a class="nav-link" data-page="visitor-entry" href="visitor_entry.html">일일 입력</a>
+      <a class="nav-link" data-page="visitor-bulk-entry" data-min-role="OPERATOR" href="visitor_bulk_entry.html">일괄 입력</a>
       <a class="nav-link" data-page="visitor-summary" href="visitor_summary.html">통계 리포트</a>
-      <a class="nav-link" data-page="visitor-settings" href="visitor_settings.html">학년도 · 설정</a>
+      <a class="nav-link" data-page="visitor-settings" data-min-role="OPERATOR" href="visitor_settings.html">학년도 · 설정</a>
       <div class="nav-divider"></div>
       <a class="nav-link nav-secondary" href="dashboard.html" data-return-target="dashboard.html">근무 시스템 돌아가기</a>
     </nav>
@@ -117,14 +118,14 @@
             <input type="date" id="period-semester1-end" />
           </div>
           <div class="form-row">
-            <label>2학기</label>
-            <input type="date" id="period-semester2-start" />
-            <input type="date" id="period-semester2-end" />
-          </div>
-          <div class="form-row">
             <label>여름방학</label>
             <input type="date" id="period-summer-start" />
             <input type="date" id="period-summer-end" />
+          </div>
+          <div class="form-row">
+            <label>2학기</label>
+            <input type="date" id="period-semester2-start" />
+            <input type="date" id="period-semester2-end" />
           </div>
           <div class="form-row">
             <label>겨울방학</label>

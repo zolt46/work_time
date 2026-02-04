@@ -389,6 +389,10 @@ class VisitorBulkEntryRequest(BaseModel):
     entries: list[VisitorBulkEntryItem]
 
 
+class VisitorBulkEntryRequest(BaseModel):
+    entries: list[VisitorBulkEntryItem]
+
+
 class VisitorEntryOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

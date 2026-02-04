@@ -246,6 +246,12 @@ function renderEntries() {
     const tr = document.createElement('tr');
     if (entry.id === selectedEntryId) tr.classList.add('selected');
     const updater = entry.updated_by_name || entry.created_by_name || '-';
+    const totalCount = entry.total_count === 0 && entry.daily_override !== null && entry.previous_total !== null
+      ? entry.previous_total + entry.daily_override
+      : entry.total_count;
+    const dailyVisitors = entry.daily_visitors === 0 && entry.daily_override !== null
+      ? entry.daily_override
+      : entry.daily_visitors;
     tr.innerHTML = `
       <td>${formatDate(entry.visit_date)}</td>
       <td>${formatNumber(entry.daily_visitors)}</td>

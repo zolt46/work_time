@@ -155,6 +155,7 @@ function renderBulkMonthTable() {
     tbody.appendChild(tr);
     current.setDate(current.getDate() + 1);
   }
+  updateBulkEntryAvailability();
 }
 
 function updateResetControls() {
@@ -176,11 +177,26 @@ function hasBaselineInYear() {
 function updateBulkEntryAvailability() {
   const hint = getElement('bulk-entry-hint');
   const saveBtn = getElement('save-bulk-entry');
+  const monthLoadBtn = getElement('bulk-month-load');
+  const monthSaveBtn = getElement('save-bulk-month');
+  const monthInput = getElement('bulk-month');
   if (!hint) return;
   if (!hasBaselineInYear()) {
     hint.textContent = '기준점이 없습니다. 1건/월간 입력에서 전일 합산 기준값을 먼저 저장하세요.';
+    if (monthLoadBtn) monthLoadBtn.disabled = true;
+    if (monthSaveBtn) monthSaveBtn.disabled = true;
+    if (monthInput) monthInput.disabled = true;
+    document.querySelectorAll('.bulk-month-input').forEach((input) => {
+      input.disabled = true;
+    });
   } else {
     hint.textContent = '기준점이 있다면 월간 입력도 바로 저장할 수 있습니다.';
+    if (monthLoadBtn) monthLoadBtn.disabled = false;
+    if (monthSaveBtn) monthSaveBtn.disabled = false;
+    if (monthInput) monthInput.disabled = false;
+    document.querySelectorAll('.bulk-month-input').forEach((input) => {
+      input.disabled = false;
+    });
   }
   if (saveBtn) {
     saveBtn.disabled = false;
@@ -518,7 +534,7 @@ function selectEntry(entry) {
   const bulkVisit = getElement('bulk-visit-date');
   if (bulkVisit) bulkVisit.value = entry.visit_date;
   const bulkBaseline = getElement('bulk-baseline-total');
-  if (bulkBaseline) bulkBaseline.value = entry.previous_total ?? entry.baseline_total ?? '';
+  if (bulkBaseline) bulkBaseline.value = entry.baseline_total ?? entry.previous_total ?? '';
   const bulkDaily = getElement('bulk-daily-visitors');
   if (bulkDaily) bulkDaily.value = entry.daily_override ?? '';
   const bulkDelete = getElement('delete-bulk-entry');

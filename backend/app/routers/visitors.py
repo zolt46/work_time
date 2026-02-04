@@ -390,8 +390,9 @@ def upsert_entry(year_id, payload: schemas.VisitorEntryCreate, db: Session = Dep
                 raise HTTPException(status_code=403, detail="오늘 날짜만 수정할 수 있습니다.")
         entry.count1 = payload.count1
         entry.count2 = payload.count2
-        entry.baseline_total = payload.baseline_total
-        entry.daily_override = payload.daily_override
+        if payload.baseline_total is not None or payload.daily_override is not None:
+            entry.baseline_total = payload.baseline_total
+            entry.daily_override = payload.daily_override
         entry.updated_by = current_user.id
     else:
         entry = models.VisitorDailyCount(

@@ -430,10 +430,10 @@ function renderCalendar() {
   }
   for (let day = 1; day <= totalDays; day += 1) {
     const cell = document.createElement('div');
-    const dateStr = new Date(year, month, day).toISOString().slice(0, 10);
+    const dateStr = formatDateKey(new Date(year, month, day));
     const entry = entriesMap.get(dateStr);
     const author = entry?.updated_by_name || entry?.created_by_name || '-';
-    const isToday = dateStr === new Date().toISOString().slice(0, 10);
+    const isToday = dateStr === formatDateKey(new Date());
     cell.className = 'calendar-cell';
     if (isToday) cell.classList.add('is-today');
     cell.innerHTML = `
@@ -590,14 +590,15 @@ function resolveYearByDate(years, targetDate) {
 async function loadYears(preferredAcademicYear = null) {
   const select = getElement('year-select');
   const years = await apiRequest('/visitors/years');
-  if (!select) return;
-  select.innerHTML = '';
-  years.forEach((year) => {
-    const option = document.createElement('option');
-    option.value = year.id;
-    option.textContent = year.label;
-    select.appendChild(option);
-  });
+  if (select) {
+    select.innerHTML = '';
+    years.forEach((year) => {
+      const option = document.createElement('option');
+      option.value = year.id;
+      option.textContent = year.label;
+      select.appendChild(option);
+    });
+  }
   if (years.length) {
     const preferred = preferredAcademicYear
       ? years.find((year) => year.academic_year === preferredAcademicYear)
@@ -605,7 +606,9 @@ async function loadYears(preferredAcademicYear = null) {
     const today = new Date();
     const datedYear = resolveYearByDate(years, today);
     const activeYear = preferred || datedYear || years[0];
-    select.value = activeYear.id;
+    if (select) {
+      select.value = activeYear.id;
+    }
     await loadYearDetail(activeYear.id);
   } else {
     currentYear = null;
@@ -687,10 +690,6 @@ function bindEvents() {
       showUserError('Count 1과 Count 2를 모두 입력하세요.', 'entry-message');
       return;
     }
-    if (Math.abs(count1 - count2) >= 10000) {
-      showUserError('Count 1과 Count 2 차이가 너무 큽니다.', 'entry-message');
-      return;
-    }
     if (prevTotal === null) {
       showUserError('전일 합산을 불러오거나 직접 입력하세요.', 'entry-message');
       return;
@@ -714,7 +713,7 @@ function bindEvents() {
         body: JSON.stringify({
           visit_date: visitDate,
           daily_visitors: dailyVisitors,
-          previous_total: prevTotal
+          previous_total: totalCount
         })
       });
       await loadYearDetail(currentYear.id);
@@ -850,23 +849,9 @@ function bindEvents() {
     }
   });
 
-  getElement('reset-year-entries')?.addEventListener('click', async () => {
-    if (!currentYear) return;
-    if (!confirm('해당 학년도 입력 데이터를 모두 초기화할까요?')) return;
-    try {
-      await apiRequest(`/visitors/years/${currentYear.id}/entries`, {
-        method: 'DELETE'
-      });
-      await loadYearDetail(currentYear.id);
-      alert('학년도 입력 데이터가 초기화되었습니다.');
-    } catch (error) {
-      showUserError(error.message || '학년도 초기화에 실패했습니다.', 'bulk-entry-message');
-    }
-  });
-
   getElement('delete-year')?.addEventListener('click', async () => {
     if (!currentYear) return;
-    if (!confirm('학년도 자체를 삭제할까요? 기간/설정도 함께 삭제됩니다.')) return;
+    if (!confirm('학년도 삭제 시 데이터와 기간 설정이 모두 삭제됩니다. 계속할까요?')) return;
     try {
       await apiRequest(`/visitors/years/${currentYear.id}`, { method: 'DELETE' });
       alert('학년도 삭제가 완료되었습니다.');

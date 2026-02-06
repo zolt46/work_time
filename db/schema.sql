@@ -289,7 +289,7 @@ FOR EACH ROW EXECUTE PROCEDURE update_timestamp();
 
 DO $$ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'serial_acquisition_type') THEN
-        CREATE TYPE serial_acquisition_type AS ENUM ('DONATION', 'SUBSCRIPTION');
+        CREATE TYPE serial_acquisition_type AS ENUM ('UNCLASSIFIED', 'DONATION', 'SUBSCRIPTION');
     END IF;
 END $$;
 

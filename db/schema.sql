@@ -286,3 +286,92 @@ FOR EACH ROW EXECUTE PROCEDURE update_timestamp();
 CREATE TRIGGER trg_visitor_year_stats_updated
 BEFORE UPDATE ON visitor_year_stats
 FOR EACH ROW EXECUTE PROCEDURE update_timestamp();
+
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'serial_acquisition_type') THEN
+        CREATE TYPE serial_acquisition_type AS ENUM ('UNCLASSIFIED', 'DONATION', 'SUBSCRIPTION');
+    END IF;
+END $$;
+
+CREATE TABLE IF NOT EXISTS serial_publications (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    title TEXT NOT NULL,
+    issn TEXT,
+    acquisition_type serial_acquisition_type NOT NULL,
+    shelf_section TEXT NOT NULL,
+    shelf_row INTEGER,
+    shelf_column INTEGER,
+    shelf_note TEXT,
+    remark TEXT,
+    created_by UUID REFERENCES users(id),
+    updated_by UUID REFERENCES users(id),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_serial_publications_title ON serial_publications(title);
+CREATE INDEX IF NOT EXISTS idx_serial_publications_issn ON serial_publications(issn);
+CREATE INDEX IF NOT EXISTS idx_serial_publications_shelf ON serial_publications(shelf_section);
+
+CREATE TRIGGER trg_serial_publications_updated
+BEFORE UPDATE ON serial_publications
+FOR EACH ROW EXECUTE PROCEDURE update_timestamp();
+
+CREATE TABLE IF NOT EXISTS serial_layouts (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name TEXT NOT NULL,
+    width INTEGER NOT NULL DEFAULT 800,
+    height INTEGER NOT NULL DEFAULT 500,
+    note TEXT,
+    created_by UUID REFERENCES users(id),
+    updated_by UUID REFERENCES users(id),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS serial_shelf_types (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name TEXT NOT NULL,
+    width INTEGER NOT NULL DEFAULT 80,
+    height INTEGER NOT NULL DEFAULT 40,
+    rows INTEGER NOT NULL DEFAULT 5,
+    columns INTEGER NOT NULL DEFAULT 5,
+    note TEXT,
+    created_by UUID REFERENCES users(id),
+    updated_by UUID REFERENCES users(id),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS serial_shelves (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    layout_id UUID NOT NULL REFERENCES serial_layouts(id) ON DELETE CASCADE,
+    shelf_type_id UUID NOT NULL REFERENCES serial_shelf_types(id),
+    code TEXT NOT NULL,
+    x INTEGER NOT NULL DEFAULT 0,
+    y INTEGER NOT NULL DEFAULT 0,
+    rotation INTEGER NOT NULL DEFAULT 0,
+    note TEXT,
+    created_by UUID REFERENCES users(id),
+    updated_by UUID REFERENCES users(id),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE serial_publications
+    ADD COLUMN IF NOT EXISTS shelf_id UUID REFERENCES serial_shelves(id);
+
+CREATE INDEX IF NOT EXISTS idx_serial_shelves_layout ON serial_shelves(layout_id);
+CREATE INDEX IF NOT EXISTS idx_serial_shelves_code ON serial_shelves(code);
+
+CREATE TRIGGER trg_serial_layouts_updated
+BEFORE UPDATE ON serial_layouts
+FOR EACH ROW EXECUTE PROCEDURE update_timestamp();
+
+CREATE TRIGGER trg_serial_shelf_types_updated
+BEFORE UPDATE ON serial_shelf_types
+FOR EACH ROW EXECUTE PROCEDURE update_timestamp();
+
+CREATE TRIGGER trg_serial_shelves_updated
+BEFORE UPDATE ON serial_shelves
+FOR EACH ROW EXECUTE PROCEDURE update_timestamp();

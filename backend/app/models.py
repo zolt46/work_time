@@ -94,6 +94,7 @@ class SerialLayout(Base):
         default=datetime.utcnow,
         onupdate=datetime.utcnow,
     )
+    walls = Column(JSONB)
 
     shelves = relationship("SerialShelf", back_populates="layout", cascade="all, delete-orphan")
 

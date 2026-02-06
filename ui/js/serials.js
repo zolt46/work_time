@@ -235,7 +235,7 @@ async function deleteSerial() {
 function bindEvents() {
   getElement('search-button')?.addEventListener('click', loadSerials);
   getElement('serials-logo')?.addEventListener('click', () => {
-    window.location.reload();
+    window.location.href = 'serials_home.html';
   });
   getElement('search-reset')?.addEventListener('click', () => {
     getElement('search-keyword').value = '';
